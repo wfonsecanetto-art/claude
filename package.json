@@ -1,0 +1,34 @@
+{
+  "name": "banco-valor-digital",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Projeto piloto do website institucional e plataforma digital do Banco Valor Digital.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.7.0",
+    "framer-motion": "12.43.0",
+    "lucide-react": "1.34.0",
+    "next": "15.5.23",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.18.9",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.1",
+    "@types/three": "0.185.0",
+    "eslint": "9.39.1",
+    "eslint-config-next": "15.5.23",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  }
+}
