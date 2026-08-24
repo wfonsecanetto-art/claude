@@ -10,7 +10,17 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   // next-env.d.ts é gerado pelo Next e não segue as regras do projeto.
-  { ignores: [".next/**", "node_modules/**", "next-env.d.ts"] },
+  { ignores: [".next/**", "node_modules/**", "next-env.d.ts", "src/generated/**"] },
+  {
+    rules: {
+      // Parâmetros exigidos por assinatura mas não usados (o `state` das
+      // server actions, por exemplo) são marcados com underscore.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;

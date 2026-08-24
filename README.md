@@ -1,146 +1,252 @@
-# BANCO VALOR DIGITAL — projeto piloto
+# BANCO VALOR DIGITAL
 
-Website institucional e vitrine da plataforma digital da **Valor**, construído
-como projeto piloto: uma página única, em português, que apresenta o produto de
-microcrédito, o Score Valor, o ciclo de relacionamento e a arquitetura prevista.
+Plataforma financeira digital: site institucional, aplicativo do cliente e
+backoffice de análise, com back-end, banco de dados, razão contábil de dupla
+entrada e motor de crédito próprio.
 
-> **Isto é uma demonstração.** Não há back-end, integração bancária, bureau de
-> crédito ou processamento de pagamento. Todo número exibido nas interfaces vem
-> de `src/lib/mock` e aparece acompanhado do selo *dados de demonstração*.
+> **Sobre o estágio do projeto.** O sistema funciona de ponta a ponta: cadastro,
+> verificação, análise de crédito, contrato, liberação, pagamento, cashback e
+> score. O que **não** existe é a camada regulada — autorização do Banco Central,
+> Pix no SPI, emissão de cartão, bureau de crédito e KYC com fornecedor. Tudo
+> isso está atrás de interfaces com adaptador `SANDBOX`, identificado na tela.
+> Ver [Limites e o que falta](#limites-e-o-que-falta).
 
 ---
 
-## Stack
-
-| Camada       | Escolha                                        |
-| ------------ | ---------------------------------------------- |
-| Framework    | Next.js 15 (App Router) + React 19 + TypeScript |
-| Estilos      | Tailwind CSS 4 (tokens em `globals.css`)        |
-| Animação     | Framer Motion                                   |
-| 3D           | React Three Fiber + three.js (carregado sob demanda) |
-| Ícones       | lucide-react                                    |
-
-Back-end futuro previsto no projeto: Node.js/NestJS, PostgreSQL, Redis,
-REST + eventos/webhooks, OAuth/JWT com MFA.
-
 ## Rodando
 
+Não é preciso instalar banco de dados: o padrão é SQLite em arquivo.
+
 ```bash
-npm install
-npm run dev      # http://localhost:3000
-npm run build    # build de produção
-npm run start    # serve o build
-npm run lint     # ESLint
-npm run typecheck
+npm install          # instala, cria o .env com um segredo novo e gera o Prisma Client
+npm run setup        # aplica as migrações e popula o ambiente
+npm run dev          # http://localhost:3000
 ```
+
+O `.env` é criado na instalação com um `AUTH_SECRET` aleatório e não é
+versionado — assinar sessão de produto financeiro com chave pública no
+repositório não é opção.
+
+### Acessos criados pelo seed
+
+Senha para todos: `Valor@2026`
+
+| Usuário | Papel | Estado |
+| --- | --- | --- |
+| `cliente@exemplo.com` | Cliente | 20 meses de conta, 1 contrato quitado, 1 ativo, score Ouro |
+| `pendente@exemplo.com` | Cliente | Cadastro enviado, aguardando análise |
+| `analista@valor.com.br` | Analista | Acessa `/backoffice` |
+
+### Outros comandos
+
+```bash
+npm run build      npm run start      # produção
+npm test                              # 24 testes da matemática de crédito
+npm run typecheck  npm run lint
+npm run db:studio                     # inspecionar o banco
+npm run db:seed                       # restaurar o ambiente ao estado inicial
+```
+
+Para PostgreSQL, troque `provider` em `prisma/schema.prisma` e aponte
+`DATABASE_URL`. O schema não usa nada específico de SQLite.
+
+---
+
+## O que o sistema faz
+
+**Site institucional** (`/`) — apresenta o produto e leva ao cadastro.
+
+**Aplicativo do cliente** (`/app`)
+
+| Tela | O que faz |
+| --- | --- |
+| Início | Limite, saldo, saldo devedor, próximo vencimento, score, contratos, cashback |
+| Verificação | Dados pessoais, endereço, documentos e referências → análise |
+| Crédito | Simulador com parcela, IOF e CET reais; solicitação com decisão imediata |
+| Contratos | Condições, cronograma completo, assinatura e pagamento de parcelas |
+| Extrato | Movimentação da Conta Valor com saldo corrente |
+| Transferir | Envio entre contas da plataforma |
+| Score | Pontuação com a decomposição fator a fator |
+| Segurança | MFA por TOTP, troca de senha, encerramento de sessões, atividade recente |
+
+**Backoffice** (`/backoffice`, papel `ANALYST` ou `ADMIN`) — fila de cadastros,
+fila de propostas que a política automática não resolveu, indicadores da
+carteira e trilha de auditoria.
+
+---
+
+## Como funciona por dentro
+
+### Dinheiro: razão de dupla entrada
+
+Nenhum saldo é guardado em coluna. Saldo é sempre a soma das partidas
+(`src/server/ledger.ts`), e toda transação é recusada na escrita se débitos não
+igualarem créditos. Consequência prática: é impossível um saldo divergir do
+histórico, e qualquer número exibido ao cliente pode ser reconstruído.
+
+Liberação de um contrato de R$ 1.000 com R$ 30 de IOF:
+
+```
+DÉBITO   Recebíveis      1.030,00
+CRÉDITO  Conta do cliente  1.000,00
+CRÉDITO  Receitas/tributos    30,00
+```
+
+Todo valor é `Int` de centavos. Ponto flutuante não representa 0,1 exatamente, e
+somar parcelas em decimal acumula o erro que aparece como divergência de um
+centavo no fim do contrato.
+
+### Crédito: Price, IOF e CET
+
+`src/server/credit/schedule.ts` implementa:
+
+- **Tabela Price** — `PMT = PV · i / (1 − (1+i)⁻ⁿ)`, com a última parcela
+  liquidando o saldo remanescente para que a soma feche exatamente.
+- **IOF de crédito PF** — alíquota adicional sobre a operação mais a alíquota
+  diária sobre cada parcela de principal, limitada a 365 dias. O IOF é
+  financiado junto com o principal, o que cria dependência circular (o IOF
+  depende do cronograma, que depende do valor financiado); três iterações
+  convergem na casa do centavo.
+- **CET** — taxa interna de retorno do fluxo real do cliente, por bisseção.
+  Bisseção em vez de Newton porque não depende de chute inicial e não diverge.
+
+Os testes conferem a parcela contra valor de mercado conhecido (R$ 10.000 em 12x
+a 2% a.m. = R$ 945,60), que a soma das parcelas feche com o total, que a
+amortização feche com o valor financiado e que a TIR recupere a taxa de um fluxo
+conhecido.
+
+### Score Valor: explicável por construção
+
+`src/server/credit/score.ts` é um conjunto de regras determinísticas, 0 a 1.000
+pontos. Cada ponto atribuído tem fator nomeado, peso visível e explicação — a
+tela `/app/score` mostra a decomposição completa. Decisão de crédito precisa ser
+justificável ao cliente e auditável depois; caixa-preta não serve.
+
+O score define o nível (Bronze → Black), que define taxa, teto e cashback. Como
+a utilização do limite entra no score e o limite depende do nível, o cálculo é
+feito em duas passagens: a primeira ignora a utilização e determina o nível, a
+segunda mede a utilização contra o limite desse nível.
+
+### Política de crédito
+
+`src/server/credit/policy.ts` decide, e devolve os critérios um a um:
+
+- limite = menor entre o teto do nível e 30% da renda declarada por 12 meses;
+- parcela não pode passar de 30% da renda;
+- nenhuma parcela vencida em aberto;
+- score ≥ 300 aprova automaticamente, 250–299 vai para análise manual,
+  abaixo disso recusa.
+
+As taxas (2,90% a 6,90% a.m. por nível) são **parâmetros de configuração**, não
+uma oferta: precisam de homologação da área de crédito e do jurídico.
+
+### Segurança
+
+- Senha com bcrypt custo 12; requisitos mínimos verificados no servidor.
+- Sessão em cookie `httpOnly`, `SameSite=Lax`, JWT assinado carregando apenas o
+  identificador da sessão — papel e status vêm do banco a cada requisição, então
+  bloquear um usuário ou revogar sessão tem efeito imediato.
+- MFA por TOTP (RFC 6238), compatível com qualquer autenticador. Sem SMS: SIM
+  swap é vetor conhecido de fraude financeira no Brasil.
+- Trocar a senha derruba as demais sessões.
+- Limitação de taxa em login, cadastro e verificação de MFA.
+- Documentos de KYC ficam fora de `/public`, servidos só por rota autenticada
+  com `Cache-Control: no-store` e proteção contra escape de diretório.
+- Cabeçalhos `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` e
+  `Permissions-Policy` em toda resposta.
+- Trilha de auditoria em toda decisão de crédito, evento de segurança e
+  alteração de cadastro.
+- Login não diferencia "e-mail não existe" de "senha errada".
+
+Autorização mora nos guards do servidor (`src/server/auth/guards.ts`), chamados
+em cada página e em cada server action. O middleware só evita renderizar rota
+privada sem cookie — nunca é ele quem autoriza.
+
+---
 
 ## Estrutura
 
 ```
-src/
-  app/
-    layout.tsx          Fontes, metadata, MotionConfig
-    page.tsx            Composição da página única
-    globals.css         Tokens de design, utilitários e keyframes
-  components/
-    Header.tsx          Header transparente → vidro ao rolar
-    Footer.tsx
-    sections/           Uma seção por arquivo, na ordem da página
-    three/              Objeto 3D do Hero + alternativa SVG sem WebGL
-    ui/                 Primitivas: títulos, cards, botões, selos
-  content/site.ts       Todo o texto institucional, em um só lugar
-  lib/
-    hooks.ts            Parallax de ponteiro, count-up, tilt, scroll
-    motion.ts           Presets de movimento (ease-out, 400–1000ms)
-    mock/               Camada de demonstração + fronteira de integração
+prisma/schema.prisma       17 modelos: usuários, KYC, razão, crédito, auditoria
+prisma/seed.ts             Ambiente com histórico coerente e razão balanceado
+
+src/server/
+  ledger.ts                Dupla entrada, saldos e extrato
+  money.ts                 Centavos inteiros e formatação
+  credit/schedule.ts       Price, IOF, CET
+  credit/score.ts          Score Valor explicável
+  credit/policy.ts         Limite e decisão
+  credit/rates.ts          Parâmetros da política
+  services/                Orquestração: crédito, pagamentos, score, onboarding
+  auth/                    Senha, sessão, MFA, guards
+  rails/payment.ts         Interface do trilho + adaptador SANDBOX
+  audit.ts  ratelimit.ts  validation.ts
+
+src/app/
+  page.tsx                 Site institucional
+  entrar/  criar-conta/    Autenticação e segundo fator
+  app/                     Aplicativo do cliente
+  backoffice/              Esteira de análise
+  actions/                 Server actions (mutações)
+  api/documentos/[id]/     Entrega autenticada de documento privado
+
+src/components/            Seções do site, primitivas do app, objeto 3D
 ```
 
-### Identidade visual
+Mutações usam **Server Actions**; leituras acontecem em **Server Components**.
+O simulador navega por GET e calcula no servidor — uma só implementação da
+matemática, e a página funciona sem JavaScript.
 
-| Token          | Valor     | Uso                                        |
-| -------------- | --------- | ------------------------------------------ |
-| Verde-limão    | `#B7FF00` | CTAs, números, ícones, linhas, iluminação   |
-| Preto profundo | `#050505` | Fundo                                      |
-| Grafite        | `#101313` | Superfícies e cards                        |
-| Branco         | `#FFFFFF` | Títulos e texto principal                  |
-| Cinza          | `#A5A5A5` | Texto de apoio e microtexto técnico         |
+---
 
-Tipografia: **Manrope** (títulos, ExtraBold, caixa alta, tracking negativo) e
-**Inter** (texto e microtexto). O contraste entre título gigante e microtexto de
-`0.6875rem` com `letter-spacing` de `0.24em` é o que dá a linguagem editorial.
+## Design
 
-Grid: 12 colunas no desktop, 4 no mobile — a composição é adaptada por seção,
-não apenas reduzida.
+Verde-limão `#B7FF00` sobre preto `#050505`, Manrope nos títulos e Inter no
+texto. O contraste entre título gigante e microtexto técnico é o que dá a
+linguagem editorial.
 
-## Decisões que valem registro
+O objeto 3D do hero (React Three Fiber) é carregado sob demanda e só em tela
+grande com ponteiro fino e WebGL disponível; nos demais casos entra uma
+composição SVG equivalente. O ambiente do metal é gerado em canvas e passado
+pelo `PMREMGenerator` — reflexo real sem HDRI e sem requisição de rede.
 
-**O 3D não entra no bundle inicial.** `ValorScene` é carregado por
-`next/dynamic` com `ssr: false` e só quando há tela grande, ponteiro fino e
-WebGL disponível. Nos demais casos entra `ValorObjectFallback`, uma composição
-SVG com a mesma leitura visual e custo próximo de zero. Sob
-`prefers-reduced-motion` a cena usa `frameloop="demand"`: desenha uma vez e para.
+Movimento entre 400ms e 1000ms, só `transform`/`opacity`/`filter`, com
+`MotionConfig reducedMotion="user"`.
 
-**Metal sem HDRI.** Um `MeshStandardMaterial` metálico sem mapa de ambiente
-renderiza preto. Em vez de baixar um HDRI, o ambiente é pintado em um canvas
-(gradiente equirretangular com faixa verde-limão e uma fonte de luz) e passado
-pelo `PMREMGenerator` — reflexo real, nenhuma requisição de rede.
-
-**Movimento com função.** Os presets de `lib/motion.ts` ficam entre 400ms e
-1000ms, com `ease-out` ou spring suave, e animam apenas `transform`, `opacity`
-e `filter` — nada que provoque reflow. `MotionConfig reducedMotion="user"`
-suprime transformações para quem pede menos movimento; o CSS zera as animações
-contínuas.
-
-**Seções usam `overflow-x: clip`, não `overflow: hidden`.** `hidden` cria um
-contexto de rolagem e quebra o `position: sticky` das colunas fixas (o fluxo do
-microcrédito depende disso).
-
-**Trilho horizontal com rolagem nativa.** Os cards de tecnologia usam
-`overflow-x: auto` com scroll-snap em vez de sequestrar a rolagem vertical:
-funciona com teclado, roda do mouse e toque. O `scroll-padding` acompanha o
-`padding` para que o primeiro card fique alinhado ao grid editorial.
-
-## Dados de demonstração
-
-`src/lib/mock` é a única fonte de números da interface, e existe justamente para
-marcar a fronteira:
-
-```ts
-export interface ValorPlatformClient {
-  readonly source: DataSource;      // "demo" | "live"
-  getScore(): Promise<ValorScore>;
-  getCreditPosition(): Promise<CreditPosition>;
-  listContracts(): Promise<ContractSummary[]>;
-  listOffers(): Promise<CreditOffer[]>;
-}
-```
-
-Quando existir back-end, basta uma implementação HTTP dessa mesma interface —
-os componentes não mudam. Enquanto isso:
-
-- todo registro carrega `source: "demo"`;
-- toda tela que mostra número exibe o selo `DemoBadge`;
-- o cashback aparece sempre com as condições aplicáveis (quitação integral e
-  regras do produto), nunca como benefício garantido;
-- os "Números da Valor" são parâmetros de produto (1 produto, 5 níveis, 1.000
-  pontos), não métricas comerciais;
-- `robots` está em `noindex` enquanto o piloto for demonstrativo.
+---
 
 ## Acessibilidade
 
-Um `h1` por página e hierarquia de títulos contínua; todas as seções com
-`aria-labelledby`; títulos animados palavra a palavra expõem a frase inteira via
-`aria-label` e escondem os fragmentos da tecnologia assistiva; gráficos SVG têm
-`role="img"` com descrição; link "pular para o conteúdo" como primeiro tab stop;
-foco visível em verde-limão; menu mobile fecha com `Esc` e trava a rolagem de
-fundo; o diagrama circular do Ciclo Valor tem uma legenda textual equivalente.
+Um `h1` por página e hierarquia contínua; seções com `aria-labelledby`; títulos
+animados expõem a frase inteira via `aria-label`; gráficos SVG com `role="img"`
+e descrição; link "pular para o conteúdo" como primeiro tab stop; foco visível;
+formulários com rótulo associado e mensagens em `aria-live`; menu mobile fecha
+com `Esc`. Sem overflow horizontal em 390, 834, 1280 e 1728px.
 
-Verificado sem overflow horizontal em 390, 834, 1280 e 1728px.
+---
 
-## Limites conhecidos
+## Limites e o que falta
 
-- Não há rotas além da página única — "Entrar" e "Solicitar crédito" apontam
-  para a âncora de contato.
-- Privacidade, Termos e Contato são âncoras de espaço reservado: nenhum texto
-  jurídico, endereço ou registro foi inventado.
-- Sem testes automatizados; a verificação foi visual e por auditoria de DOM.
+**Bloqueado por licença ou contrato — não é questão de código:**
+
+- Autorização do Banco Central (SCD/SEP) ou operação via parceiro (banco, FIDC,
+  securitizadora). O uso da palavra "Banco" no nome também é regulado.
+- Pix no SPI, boleto registrado, emissão de cartão em bandeira.
+- Bureau de crédito, KYC com validação documental e biometria.
+- Assinatura eletrônica com fé pública (ICP-Brasil ou equivalente aceito).
+- Reporte ao SCR e demais obrigações regulatórias.
+
+Cada um desses tem ponto de encaixe pronto: `PaymentRail` para o trilho, o
+`ScoreInput` para dados de bureau, o hash de assinatura para o provedor
+certificado.
+
+**Pendente de engenharia:**
+
+- Régua de cobrança, negativação e tratamento de inadimplência além da marcação
+  de atraso.
+- Pagamento parcial e antecipação com desconto proporcional.
+- Notificações (e-mail, push) — hoje o cliente descobre pelo app.
+- Rate limiting em Redis: o atual é por processo e reinicia a cada deploy.
+- Testes de integração dos serviços (a matemática está coberta; os fluxos foram
+  verificados de ponta a ponta com navegador).
+- Textos de Privacidade e Termos — nenhum texto jurídico foi inventado.

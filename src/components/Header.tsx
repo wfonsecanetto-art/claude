@@ -76,10 +76,10 @@ export function Header() {
           </nav>
 
           <div className="hidden items-center gap-2 lg:flex">
-            <MagneticButton href="#contato" variant="ghost">
+            <MagneticButton href="/entrar" variant="ghost">
               Entrar
             </MagneticButton>
-            <MagneticButton href="#contato" variant="primary" className="px-6 py-3 text-[0.8125rem]">
+            <MagneticButton href="/criar-conta" variant="primary" className="px-6 py-3 text-[0.8125rem]">
               Solicitar crédito
             </MagneticButton>
           </div>
@@ -130,10 +130,10 @@ export function Header() {
             </nav>
 
             <div className="container-valor flex flex-col gap-3 pb-10">
-              <MagneticButton href="#contato" variant="primary" className="w-full">
+              <MagneticButton href="/criar-conta" variant="primary" className="w-full">
                 Solicitar crédito
               </MagneticButton>
-              <MagneticButton href="#contato" variant="outline" className="w-full">
+              <MagneticButton href="/entrar" variant="outline" className="w-full">
                 Entrar
               </MagneticButton>
             </div>

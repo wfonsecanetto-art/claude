@@ -1,0 +1,338 @@
+// Banco Valor Digital — modelo de dados da plataforma.
+//
+// O provider é SQLite para que o projeto rode com `npm install` e nada mais.
+// Para PostgreSQL, troque `provider` por "postgresql" e aponte DATABASE_URL:
+// o schema não usa nada específico de SQLite (enums viram String por
+// compatibilidade, com os valores validados em TypeScript/zod).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identidade e acesso
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  cpf          String   @unique
+  phone        String
+  /// CUSTOMER | ANALYST | ADMIN
+  role         String   @default("CUSTOMER")
+  /// PENDING_KYC | ACTIVE | BLOCKED
+  status       String   @default("PENDING_KYC")
+  mfaSecret    String?
+  mfaEnabledAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions     Session[]
+  kyc          KycProfile?
+  documents    Document[]
+  references   PersonalReference[]
+  accounts     Account[]
+  applications CreditApplication[]
+  contracts    Contract[]
+  scores       ScoreSnapshot[]
+  cashback     CashbackGrant[]
+  auditLogs    AuditLog[]        @relation("AuditActor")
+  transfersOut Transfer[]        @relation("TransferFrom")
+  transfersIn  Transfer[]        @relation("TransferTo")
+
+  @@index([status])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Sessão criada antes do segundo fator ainda não autentica nada.
+  mfaPassed Boolean  @default(false)
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Cadastro e KYC
+// ---------------------------------------------------------------------------
+
+model KycProfile {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthDate      DateTime
+  motherName     String
+  occupation     String
+  monthlyIncomeCents Int
+  zipCode        String
+  street         String
+  number         String
+  complement     String?
+  district       String
+  city           String
+  state          String
+  /// DRAFT | SUBMITTED | IN_REVIEW | APPROVED | REJECTED
+  status         String    @default("DRAFT")
+  rejectionReason String?
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  reviewedById   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// IDENTITY | SELFIE | PROOF_OF_ADDRESS | PROOF_OF_INCOME
+  type        String
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  /// Chave no armazenamento privado. No piloto, caminho local fora do /public.
+  storageKey  String
+  /// PENDING | APPROVED | REJECTED
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+
+  @@index([userId, type])
+}
+
+model PersonalReference {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String
+  relationship String
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Razão contábil — toda movimentação de dinheiro passa por aqui
+// ---------------------------------------------------------------------------
+
+model Account {
+  id        String   @id @default(cuid())
+  /// WALLET (cliente) | FUNDING | RECEIVABLE | REVENUE | CASHBACK_POOL
+  kind      String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  createdAt DateTime @default(now())
+
+  entries   LedgerEntry[]
+
+  @@unique([kind, userId])
+  @@index([userId])
+}
+
+model LedgerTransaction {
+  id          String   @id @default(cuid())
+  /// DISBURSEMENT | INSTALLMENT_PAYMENT | CASHBACK | TRANSFER | DEPOSIT | FEE
+  kind        String
+  description String
+  reference   String?
+  createdAt   DateTime @default(now())
+
+  entries     LedgerEntry[]
+  payments    Payment[]
+  transfers   Transfer[]
+
+  @@index([kind])
+}
+
+/// Uma partida. A soma de (crédito - débito) de uma transação é sempre zero.
+model LedgerEntry {
+  id            String   @id @default(cuid())
+  transactionId String
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  /// DEBIT | CREDIT
+  direction     String
+  amountCents   Int
+  createdAt     DateTime @default(now())
+
+  @@index([accountId])
+  @@index([transactionId])
+}
+
+model Transfer {
+  id            String   @id @default(cuid())
+  fromUserId    String
+  fromUser      User     @relation("TransferFrom", fields: [fromUserId], references: [id])
+  toUserId      String
+  toUser        User     @relation("TransferTo", fields: [toUserId], references: [id])
+  amountCents   Int
+  description   String?
+  transactionId String
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+// ---------------------------------------------------------------------------
+// Crédito
+// ---------------------------------------------------------------------------
+
+model CreditApplication {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCents      Int
+  termMonths       Int
+  purpose          String
+  /// DRAFT | UNDER_REVIEW | APPROVED | REJECTED | CANCELLED | CONTRACTED
+  status           String    @default("UNDER_REVIEW")
+  decisionReason   String?
+  scoreAtDecision  Int?
+  monthlyRateBps   Int?
+  iofCents         Int?
+  cetYearlyBps     Int?
+  totalPayableCents Int?
+  installmentCents Int?
+  decidedAt        DateTime?
+  decidedById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  contract         Contract?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Contract {
+  id               String    @id @default(cuid())
+  number           String    @unique
+  applicationId    String    @unique
+  application      CreditApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  principalCents   Int
+  iofCents         Int
+  monthlyRateBps   Int
+  cetYearlyBps     Int
+  termMonths       Int
+  totalPayableCents Int
+  /// AWAITING_SIGNATURE | ACTIVE | SETTLED | DEFAULTED | CANCELLED
+  status           String    @default("AWAITING_SIGNATURE")
+  signedAt         DateTime?
+  signatureHash    String?
+  disbursedAt      DateTime?
+  settledAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  installments     Installment[]
+  payments         Payment[]
+  cashback         CashbackGrant?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Installment {
+  id             String   @id @default(cuid())
+  contractId     String
+  contract       Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  number         Int
+  dueDate        DateTime
+  principalCents Int
+  interestCents  Int
+  totalCents     Int
+  paidCents      Int      @default(0)
+  /// OPEN | PAID | LATE
+  status         String   @default("OPEN")
+  paidAt         DateTime?
+
+  payments       Payment[]
+
+  @@unique([contractId, number])
+  @@index([status, dueDate])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  contractId    String
+  contract      Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  installmentId String
+  installment   Installment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  amountCents   Int
+  /// WALLET_BALANCE | PIX | BOLETO
+  method        String
+  /// Identificador devolvido pelo trilho de pagamento.
+  railReference String
+  /// SANDBOX enquanto não houver instituição de pagamento contratada.
+  railProvider  String
+  transactionId String
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id])
+  paidAt        DateTime @default(now())
+
+  @@index([contractId])
+}
+
+model CashbackGrant {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contractId  String   @unique
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  amountCents Int
+  /// GRANTED | REDEEMED
+  status      String   @default("GRANTED")
+  grantedAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Score e auditoria
+// ---------------------------------------------------------------------------
+
+model ScoreSnapshot {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points    Int
+  level     String
+  /// Decomposição por fator, em JSON — o score precisa ser explicável.
+  factors   String
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

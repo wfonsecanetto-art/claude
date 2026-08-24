@@ -297,9 +297,9 @@ export const ABOUT = {
 export const FINAL_CTA = {
   titleTop: "VAMOS",
   titleBottom: "CRIAR VALOR.",
-  body: "Este é o projeto piloto da plataforma. A partir daqui, o próximo passo é construir a operação completa.",
+  body: "Abra sua conta, conclua a verificação e simule seu crédito com todas as condições na tela antes de contratar.",
   cta: "Começar agora",
-  secondary: "Falar com a Valor",
+  secondary: "Entrar na conta",
 } as const;
 
 export const FOOTER = {

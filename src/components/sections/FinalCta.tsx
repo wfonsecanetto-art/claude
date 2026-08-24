@@ -54,7 +54,7 @@ export function FinalCta() {
           viewport={viewportSoft}
           transition={easeOut(0.9, 0.3)}
         >
-          <MagneticButton href="#inicio" variant="primary" className="px-9 py-4 text-base">
+          <MagneticButton href="/criar-conta" variant="primary" className="px-9 py-4 text-base">
             {FINAL_CTA.cta}
             <ArrowRight
               size={18}
@@ -62,7 +62,7 @@ export function FinalCta() {
               className="transition-transform duration-300 group-hover:translate-x-1"
             />
           </MagneticButton>
-          <MagneticButton href="#sobre" variant="outline" className="px-9 py-4 text-base">
+          <MagneticButton href="/entrar" variant="outline" className="px-9 py-4 text-base">
             {FINAL_CTA.secondary}
           </MagneticButton>
         </motion.div>

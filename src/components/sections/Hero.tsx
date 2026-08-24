@@ -98,7 +98,7 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={easeOut(0.9, 0.9)}
             >
-              <MagneticButton href="#contato" variant="primary">
+              <MagneticButton href="/criar-conta" variant="primary">
                 {HERO.primaryCta}
                 <ArrowRight size={16} aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1" />
               </MagneticButton>
