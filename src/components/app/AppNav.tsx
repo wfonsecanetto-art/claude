@@ -27,20 +27,18 @@ export function AppNav() {
 
   return (
     <nav aria-label="Navegação da conta" className="no-scrollbar overflow-x-auto">
-      <ul className="flex gap-1 lg:flex-col">
+      <ul className="app-nav-list">
         {ITEMS.map((item) => {
           const active = item.href === "/app" ? pathname === "/app" : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <li key={item.href}>
+              {/* O estado ativo é lido do aria-current, inclusive pelo CSS —
+                  uma fonte de verdade só, para a tela e para a leitura. */}
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm whitespace-nowrap transition-colors duration-300 ${
-                  active
-                    ? "bg-lime/10 text-lime"
-                    : "text-gray-valor hover:bg-white/[0.04] hover:text-white"
-                }`}
+                className="app-nav-link"
               >
                 <Icon size={16} aria-hidden="true" />
                 {item.label}

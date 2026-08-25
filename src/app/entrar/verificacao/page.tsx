@@ -24,7 +24,7 @@ export default function MfaPage() {
           placeholder="000000"
           required
         />
-        <SubmitButton className="w-full" pendingLabel="Verificando…">
+        <SubmitButton block pendingLabel="Verificando…">
           Verificar
         </SubmitButton>
       </form>

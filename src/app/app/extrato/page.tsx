@@ -40,27 +40,27 @@ export default async function StatementPage() {
 
       <Panel title="Movimentação">
         {lines.length === 0 ? (
-          <p className="text-gray-valor text-sm">Nenhuma movimentação ainda.</p>
+          <p className="text-muted text-sm">Nenhuma movimentação ainda.</p>
         ) : (
-          <ul className="divide-hairline divide-y">
+          <ul className="list-divided">
             {lines.map((line) => (
-              <li key={line.id} className="flex items-center justify-between gap-4 py-3">
+              <li key={line.id} className="list-row">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-white">{line.description}</p>
-                  <p className="text-gray-valor mt-1 text-[0.6875rem]">
+                  <p className="text-micro mt-1">
                     {KIND_LABELS[line.kind] ?? line.kind} ·{" "}
                     {line.date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                   </p>
                 </div>
                 <div className="text-right whitespace-nowrap">
                   <p
-                    className={`text-sm font-semibold tabular-nums ${
+                    className={`num text-sm font-semibold ${
                       line.direction === "IN" ? "text-lime" : "text-white"
                     }`}
                   >
                     {line.direction === "IN" ? "+" : "−"} {formatBRL(line.amountCents)}
                   </p>
-                  <p className="text-gray-valor mt-1 text-[0.6875rem] tabular-nums">
+                  <p className="text-micro num mt-1">
                     saldo {formatBRL(line.balanceCents)}
                   </p>
                 </div>

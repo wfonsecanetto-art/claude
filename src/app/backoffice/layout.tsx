@@ -9,25 +9,23 @@ export default async function BackofficeLayout({ children }: { children: ReactNo
   const analyst = await requireRole("ANALYST", "ADMIN");
 
   return (
-    <div className="min-h-svh">
-      <header className="border-hairline bg-graphite/60 sticky top-0 z-40 border-b backdrop-blur-xl">
-        <div className="container-valor flex h-16 items-center justify-between gap-4">
+    <div className="app-shell">
+      <header className="app-topbar">
+        <div className="container-valor app-topbar-inner">
           <div className="flex items-center gap-4">
             <Logo />
-            <span className="border-lime/30 bg-lime/10 text-lime rounded-full border px-2.5 py-1 text-[0.625rem] font-semibold tracking-[0.16em] uppercase">
-              Backoffice
-            </span>
+            <span className="badge-lime">Backoffice</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <p className="text-gray-valor hidden text-xs sm:block">
+            <p className="text-micro hidden sm:block">
               {analyst.name} · {analyst.role === "ADMIN" ? "Administrador" : "Analista"}
             </p>
-            <Link href="/app" className="text-gray-valor hover:text-lime text-xs">
+            <Link href="/app" className="text-micro link-lime">
               Minha conta
             </Link>
             <form action={signOutAction}>
-              <SubmitButton variant="outline" className="px-4 py-2 text-xs" pendingLabel="Saindo…">
+              <SubmitButton variant="outline" size="sm" pendingLabel="Saindo…">
                 Sair
               </SubmitButton>
             </form>

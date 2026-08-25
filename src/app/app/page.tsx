@@ -46,12 +46,12 @@ export default async function AppHome() {
       </div>
 
       {needsVerification ? (
-        <div className="border-lime/30 bg-lime/[0.06] flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-5">
+        <div className="callout">
           <div>
             <p className="font-display text-sm font-extrabold tracking-[0.12em] text-lime uppercase">
               Verificação pendente
             </p>
-            <p className="text-gray-valor mt-1.5 text-xs leading-relaxed">
+            <p className="text-muted mt-1.5 text-xs">
               {onboarding.kycStatus === "SUBMITTED"
                 ? "Seu cadastro está em análise. Avisaremos assim que houver decisão."
                 : "Conclua a verificação de identidade para liberar o crédito."}
@@ -60,7 +60,7 @@ export default async function AppHome() {
           {onboarding.kycStatus !== "SUBMITTED" ? (
             <Link
               href="/app/verificacao"
-              className="bg-lime text-ink inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
+              className="btn btn-primary"
             >
               Continuar <ArrowRight size={15} aria-hidden="true" />
             </Link>
@@ -91,9 +91,9 @@ export default async function AppHome() {
           </div>
 
           {nextInstallment ? (
-            <div className="border-hairline mt-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4">
+            <div className="inset-box mt-5 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="eyebrow text-[0.5625rem]">Próximo vencimento</p>
+                <p className="tile-label">Próximo vencimento</p>
                 <p className="mt-1.5 text-sm text-white">
                   Parcela {nextInstallment.number} do contrato {nextInstallment.contract.number} ·{" "}
                   <span className="tabular-nums">{formatBRL(nextInstallment.totalCents)}</span> em{" "}
@@ -104,7 +104,7 @@ export default async function AppHome() {
                 <StatusPill status={nextInstallment.status} />
                 <Link
                   href={`/app/contratos/${nextInstallment.contractId}`}
-                  className="text-lime text-xs hover:underline"
+                  className="link-lime text-xs"
                 >
                   Pagar
                 </Link>
@@ -123,12 +123,12 @@ export default async function AppHome() {
               strokeWidth={7}
               compact
             />
-            <p className="text-gray-valor mt-4 text-center text-[0.6875rem] leading-relaxed">
+            <p className="text-micro mt-4 text-center">
               {position.score.pointsToNextLevel !== null && position.score.nextLevel
                 ? `Faltam ${position.score.pointsToNextLevel} pontos para ${position.score.nextLevel}.`
                 : "Você está no nível máximo."}
             </p>
-            <Link href="/app/score" className="text-lime mt-3 text-xs hover:underline">
+            <Link href="/app/score" className="link-lime mt-3 text-xs">
               Como o score é calculado
             </Link>
           </div>
@@ -139,31 +139,31 @@ export default async function AppHome() {
         <Panel
           title="Contratos"
           action={
-            <Link href="/app/contratos" className="text-lime text-xs hover:underline">
+            <Link href="/app/contratos" className="link-lime text-xs">
               Ver todos
             </Link>
           }
         >
           {contracts.length === 0 ? (
-            <p className="text-gray-valor text-sm">
+            <p className="text-muted text-sm">
               Nenhum contrato ainda.{" "}
-              <Link href="/app/credito" className="text-lime hover:underline">
+              <Link href="/app/credito" className="link-lime">
                 Simular crédito
               </Link>
               .
             </p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="list-divided">
               {contracts.map((contract) => (
-                <li key={contract.id} className="border-hairline flex items-center justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
+                <li key={contract.id} className="list-row">
                   <div>
                     <Link
                       href={`/app/contratos/${contract.id}`}
-                      className="font-display text-xs font-bold tracking-[0.1em] text-white uppercase hover:text-lime"
+                      className="font-display text-xs font-bold tracking-[0.1em] text-white uppercase transition-colors hover:text-lime"
                     >
                       {contract.number}
                     </Link>
-                    <p className="text-gray-valor mt-1 text-[0.6875rem] tabular-nums">
+                    <p className="text-micro num mt-1">
                       {formatBRL(contract.principalCents)} · {contract.termMonths}x
                     </p>
                   </div>
@@ -175,10 +175,10 @@ export default async function AppHome() {
         </Panel>
 
         <Panel title="Cashback" description="Creditado na conta após a quitação integral de cada contrato.">
-          <p className="font-display text-lime text-3xl font-extrabold tracking-tight tabular-nums">
+          <p className="font-display num text-lime text-3xl font-extrabold tracking-tight">
             {formatBRL(cashback._sum.amountCents ?? 0)}
           </p>
-          <p className="text-gray-valor mt-2 text-xs leading-relaxed">
+          <p className="text-muted mt-2 text-xs">
             Percentual sobre os juros pagos, conforme o nível de relacionamento no momento da
             quitação.
           </p>

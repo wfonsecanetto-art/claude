@@ -33,9 +33,9 @@ export default async function ContractsPage() {
 
       {contracts.length === 0 ? (
         <Panel>
-          <p className="text-gray-valor text-sm">
+          <p className="text-muted text-sm">
             Você ainda não tem contratos.{" "}
-            <Link href="/app/credito" className="text-lime hover:underline">
+            <Link href="/app/credito" className="link-lime">
               Simular crédito
             </Link>
             .
@@ -53,14 +53,14 @@ export default async function ContractsPage() {
               <Link
                 key={contract.id}
                 href={`/app/contratos/${contract.id}`}
-                className="surface-card hover:border-lime/30 block rounded-2xl p-5 transition-colors duration-300"
+                className="card-link"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="font-display text-sm font-extrabold tracking-[0.12em] text-white uppercase">
                       {contract.number}
                     </p>
-                    <p className="text-gray-valor mt-1.5 text-xs tabular-nums">
+                    <p className="text-micro num mt-1.5">
                       {formatBRL(contract.principalCents)} em {contract.termMonths}x ·{" "}
                       {contract.installments.length > 0
                         ? `${paid}/${contract.installments.length} parcelas pagas`
@@ -70,7 +70,7 @@ export default async function ContractsPage() {
                   <div className="text-right">
                     <StatusPill status={contract.status} />
                     {outstanding > 0 ? (
-                      <p className="text-gray-valor mt-2 text-xs tabular-nums">
+                      <p className="text-micro num mt-2">
                         Saldo devedor {formatBRL(outstanding)}
                       </p>
                     ) : null}
@@ -84,20 +84,20 @@ export default async function ContractsPage() {
 
       {applications.length > 0 ? (
         <Panel title="Propostas sem contrato">
-          <ul className="space-y-3">
+          <ul className="list-divided">
             {applications.map((application) => (
               <li
                 key={application.id}
-                className="border-hairline flex items-center justify-between gap-3 border-b pb-3 last:border-0 last:pb-0"
+                className="list-row"
               >
                 <div>
                   <Link
                     href={`/app/propostas/${application.id}`}
-                    className="text-sm text-white hover:text-lime"
+                    className="text-sm text-white transition-colors hover:text-lime"
                   >
                     {formatBRL(application.amountCents)} em {application.termMonths}x
                   </Link>
-                  <p className="text-gray-valor mt-1 text-[0.6875rem]">
+                  <p className="text-micro mt-1">
                     {application.createdAt.toLocaleDateString("pt-BR")} · {application.purpose}
                   </p>
                 </div>

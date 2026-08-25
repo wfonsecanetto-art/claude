@@ -14,9 +14,9 @@ export default function SignUpPage() {
       title="Criar conta"
       subtitle="Leva dois minutos. A verificação de identidade vem logo depois."
       footer={
-        <p className="text-gray-valor text-sm">
+        <p className="text-muted text-sm">
           Já tem conta?{" "}
-          <Link href="/entrar" className="text-lime hover:underline">
+          <Link href="/entrar" className="link-lime">
             Entrar
           </Link>
         </p>
@@ -38,10 +38,10 @@ export default function SignUpPage() {
           required
           hint="Mínimo de 10 caracteres, com maiúscula, minúscula e número."
         />
-        <SubmitButton className="w-full" pendingLabel="Criando…">
+        <SubmitButton block pendingLabel="Criando…">
           Criar conta
         </SubmitButton>
-        <p className="text-gray-valor text-[0.6875rem] leading-relaxed">
+        <p className="text-micro">
           Ao criar a conta você concorda com os termos de uso e com o tratamento dos seus dados
           conforme a política de privacidade.
         </p>

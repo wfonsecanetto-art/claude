@@ -25,10 +25,8 @@ export function AuthShell({
           <Logo />
         </Link>
 
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-white uppercase">
-          {title}
-        </h1>
-        <p className="text-gray-valor mt-3 text-sm leading-relaxed">{subtitle}</p>
+        <h1 className="page-title text-3xl">{title}</h1>
+        <p className="text-muted mt-3 text-sm">{subtitle}</p>
 
         <div className="mt-8">{children}</div>
 

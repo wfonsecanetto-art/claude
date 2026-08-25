@@ -67,18 +67,18 @@ export function DocumentUpload({
   const [state, formAction] = useActionState<ActionState, FormData>(uploadDocumentAction, null);
 
   return (
-    <div className="border-hairline rounded-xl border p-4">
+    <div className="inset-box">
       <p className="text-sm font-semibold text-white">
         {label}
-        {optional ? <span className="text-gray-valor font-normal"> (opcional)</span> : null}
+        {optional ? <span className="text-muted font-normal"> (opcional)</span> : null}
       </p>
 
       {current ? (
-        <p className="text-gray-valor mt-1.5 truncate text-[0.6875rem]">
+        <p className="text-micro mt-1.5 truncate">
           Enviado: {current.fileName}
         </p>
       ) : (
-        <p className="text-gray-valor mt-1.5 text-[0.6875rem]">JPG, PNG, WEBP ou PDF até 8 MB.</p>
+        <p className="text-micro mt-1.5">JPG, PNG, WEBP ou PDF até 8 MB.</p>
       )}
 
       {!locked ? (
@@ -90,9 +90,9 @@ export function DocumentUpload({
             accept="image/jpeg,image/png,image/webp,application/pdf"
             required
             aria-label={`Arquivo para ${label}`}
-            className="text-gray-valor file:bg-lime/10 file:text-lime w-full text-xs file:mr-3 file:rounded-full file:border-0 file:px-3 file:py-1.5 file:text-xs file:font-semibold"
+            className="field-file"
           />
-          <SubmitButton variant="outline" className="px-4 py-2 text-xs" pendingLabel="Enviando…">
+          <SubmitButton variant="outline" size="sm" pendingLabel="Enviando…">
             {current ? "Substituir" : "Enviar"}
           </SubmitButton>
           <Alert state={state} />
@@ -118,11 +118,11 @@ export function ReferenceForm({
           {references.map((reference) => (
             <li
               key={reference.id}
-              className="border-hairline flex items-center justify-between gap-3 rounded-xl border p-3"
+              className="inset-box flex items-center justify-between gap-3 p-3"
             >
               <div>
                 <p className="text-sm text-white">{reference.name}</p>
-                <p className="text-gray-valor text-[0.6875rem]">
+                <p className="text-micro">
                   {reference.relationship} · {reference.phone}
                 </p>
               </div>
@@ -132,7 +132,7 @@ export function ReferenceForm({
                   <button
                     type="submit"
                     aria-label={`Remover referência ${reference.name}`}
-                    className="text-gray-valor hover:text-red-300"
+                    className="text-muted transition-colors hover:text-red-300"
                   >
                     <Trash2 size={15} aria-hidden="true" />
                   </button>
@@ -166,7 +166,7 @@ export function SubmitKycForm() {
   return (
     <form action={formAction} className="space-y-4">
       <Alert state={state} />
-      <p className="text-gray-valor text-sm">
+      <p className="text-muted text-sm">
         Tudo preenchido. Ao enviar, seus dados vão para análise e não poderão ser alterados até a
         conclusão.
       </p>

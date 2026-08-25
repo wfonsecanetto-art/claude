@@ -47,7 +47,7 @@ export default async function ProfilePage() {
             ["Celular", formatPhone(record.phone)],
           ].map(([label, value]) => (
             <div key={label}>
-              <dt className="eyebrow text-[0.5625rem]">{label}</dt>
+              <dt className="tile-label">{label}</dt>
               <dd className="mt-1.5 text-sm text-white">{value}</dd>
             </div>
           ))}
@@ -60,7 +60,7 @@ export default async function ProfilePage() {
       >
         {mfaEnabled ? (
           <div className="space-y-4">
-            <p className="border-lime/30 bg-lime/10 text-lime rounded-xl border px-4 py-3 text-sm">
+            <p className="alert alert-success">
               Ativa desde {record.mfaEnabledAt?.toLocaleDateString("pt-BR")}.
             </p>
             <DisableMfaForm />
@@ -77,7 +77,7 @@ export default async function ProfilePage() {
                 className="rounded-xl"
               />
               <div>
-                <p className="text-gray-valor text-sm leading-relaxed">
+                <p className="text-muted text-sm">
                   Escaneie o código no seu aplicativo autenticador ou informe a chave manualmente:
                 </p>
                 <code className="border-hairline bg-ink/70 mt-3 block rounded-lg border px-3 py-2 text-xs break-all text-white">
@@ -104,11 +104,11 @@ export default async function ProfilePage() {
       </Panel>
 
       <Panel title="Atividade recente" description="Registro de eventos da sua conta.">
-        <ul className="divide-hairline divide-y">
+        <ul className="list-divided">
           {recentAudit.map((log) => (
-            <li key={log.id} className="flex items-center justify-between gap-4 py-2.5">
+            <li key={log.id} className="list-row">
               <p className="text-sm text-white">{log.action}</p>
-              <p className="text-gray-valor text-[0.6875rem] tabular-nums">
+              <p className="text-micro num">
                 {log.createdAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
               </p>
             </li>

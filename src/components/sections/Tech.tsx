@@ -70,7 +70,7 @@ export function Tech() {
               type="button"
               onClick={() => scrollBy(-1)}
               aria-label="Ver cards anteriores"
-              className="border-hairline-strong hover:border-lime/60 hover:text-lime inline-flex h-11 w-11 items-center justify-center rounded-full border text-white transition-colors duration-300"
+              className="btn-icon"
             >
               <ChevronLeft size={18} aria-hidden="true" />
             </button>
@@ -78,7 +78,7 @@ export function Tech() {
               type="button"
               onClick={() => scrollBy(1)}
               aria-label="Ver próximos cards"
-              className="border-hairline-strong hover:border-lime/60 hover:text-lime inline-flex h-11 w-11 items-center justify-center rounded-full border text-white transition-colors duration-300"
+              className="btn-icon"
             >
               <ChevronRight size={18} aria-hidden="true" />
             </button>

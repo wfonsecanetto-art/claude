@@ -3,17 +3,28 @@
 import { useFormStatus } from "react-dom";
 import type { ReactNode } from "react";
 
-/** Botão que conhece o estado do formulário em que está. */
+type Variant = "primary" | "outline" | "danger" | "ghost";
+
+/**
+ * Botão que conhece o estado do formulário em que está.
+ *
+ * A aparência vem das classes de styles.css; aqui fica só o comportamento:
+ * desabilitar durante o envio e trocar o rótulo.
+ */
 export function SubmitButton({
   children,
   variant = "primary",
+  size,
+  block,
   className = "",
   pendingLabel = "Enviando…",
   name,
   value,
 }: {
   children: ReactNode;
-  variant?: "primary" | "outline" | "danger";
+  variant?: Variant;
+  size?: "sm" | "lg";
+  block?: boolean;
   className?: string;
   pendingLabel?: string;
   name?: string;
@@ -21,21 +32,18 @@ export function SubmitButton({
 }) {
   const { pending } = useFormStatus();
 
-  const styles = {
-    primary: "bg-lime text-ink hover:bg-lime-bright",
-    outline: "border border-hairline-strong text-white hover:border-lime/60 hover:text-lime",
-    danger: "border border-red-500/40 text-red-300 hover:bg-red-500/10",
-  }[variant];
+  const classes = [
+    "btn",
+    `btn-${variant}`,
+    size ? `btn-${size}` : "",
+    block ? "btn-block" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <button
-      type="submit"
-      name={name}
-      value={value}
-      disabled={pending}
-      aria-busy={pending}
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60 ${styles} ${className}`}
-    >
+    <button type="submit" name={name} value={value} disabled={pending} aria-busy={pending} className={classes}>
       {pending ? pendingLabel : children}
     </button>
   );

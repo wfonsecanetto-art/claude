@@ -14,26 +14,26 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const balance = await walletBalance(user.id);
 
   return (
-    <div className="min-h-svh">
-      <header className="border-hairline bg-graphite/60 sticky top-0 z-40 border-b backdrop-blur-xl">
-        <div className="container-valor flex h-16 items-center justify-between gap-4">
+    <div className="app-shell">
+      <header className="app-topbar">
+        <div className="container-valor app-topbar-inner">
           <Link href="/app" aria-label="Conta Valor — início">
             <Logo />
           </Link>
 
           <div className="flex items-center gap-4">
             <div className="hidden text-right sm:block">
-              <p className="eyebrow text-[0.5625rem]">Saldo na Conta Valor</p>
-              <p className="font-display text-sm font-extrabold text-white tabular-nums">
+              <p className="tile-label">Saldo na Conta Valor</p>
+              <p className="font-display num text-sm font-extrabold text-white">
                 {formatBRL(balance)}
               </p>
             </div>
-            <div className="border-hairline hidden border-l pl-4 text-right md:block">
+            <div className="hidden border-l border-hairline pl-4 text-right md:block">
               <p className="text-xs font-semibold text-white">{user.name.split(" ")[0]}</p>
-              <p className="text-gray-valor text-[0.6875rem]">{maskCpf(user.cpf)}</p>
+              <p className="text-micro">{maskCpf(user.cpf)}</p>
             </div>
             <form action={signOutAction}>
-              <SubmitButton variant="outline" className="px-4 py-2 text-xs" pendingLabel="Saindo…">
+              <SubmitButton variant="outline" size="sm" pendingLabel="Saindo…">
                 Sair
               </SubmitButton>
             </form>
@@ -41,14 +41,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div className="container-valor grid gap-8 py-8 lg:grid-cols-[220px_minmax(0,1fr)] lg:py-12">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+      <div className="container-valor app-body">
+        <aside className="app-sidebar">
           <AppNav />
           {user.role !== "CUSTOMER" ? (
-            <Link
-              href="/backoffice"
-              className="border-hairline text-gray-valor hover:border-lime/40 hover:text-lime mt-4 flex items-center justify-center rounded-xl border px-3 py-2.5 text-xs transition-colors"
-            >
+            <Link href="/backoffice" className="doc-chip mt-4 w-full justify-center py-2.5">
               Ir para o backoffice
             </Link>
           ) : null}

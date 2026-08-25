@@ -4,13 +4,11 @@ import type { ReactNode } from "react";
  * Primitivas de interface da área logada.
  *
  * Sem "use client": são componentes de apresentação puros, usados tanto por
- * páginas de servidor quanto por formulários de cliente.
+ * páginas de servidor quanto por formulários de cliente. A aparência de cada
+ * um está em src/app/styles.css — aqui ficam só estrutura e semântica.
  */
 
 export { SubmitButton } from "./SubmitButton";
-
-const inputClass =
-  "w-full rounded-xl border border-hairline bg-ink/70 px-4 py-3 text-sm text-white placeholder:text-gray-valor/60 transition-colors duration-300 focus:border-lime/60 focus:outline-none focus-visible:outline-none";
 
 export function Field({
   label,
@@ -42,9 +40,9 @@ export function Field({
   const id = `field-${name}`;
   return (
     <div>
-      <label htmlFor={id} className="eyebrow mb-2 block text-[0.625rem]">
+      <label htmlFor={id} className="field-label">
         {label}
-        {required ? <span className="text-lime"> *</span> : null}
+        {required ? <span className="field-required"> *</span> : null}
       </label>
       <input
         id={id}
@@ -59,10 +57,10 @@ export function Field({
         min={min}
         step={step}
         aria-describedby={hint ? `${id}-hint` : undefined}
-        className={inputClass}
+        className="field-input"
       />
       {hint ? (
-        <p id={`${id}-hint`} className="text-gray-valor mt-1.5 text-[0.6875rem]">
+        <p id={`${id}-hint`} className="field-hint">
           {hint}
         </p>
       ) : null}
@@ -86,13 +84,13 @@ export function SelectField({
   const id = `field-${name}`;
   return (
     <div>
-      <label htmlFor={id} className="eyebrow mb-2 block text-[0.625rem]">
+      <label htmlFor={id} className="field-label">
         {label}
-        {required ? <span className="text-lime"> *</span> : null}
+        {required ? <span className="field-required"> *</span> : null}
       </label>
-      <select id={id} name={name} defaultValue={defaultValue} required={required} className={inputClass}>
+      <select id={id} name={name} defaultValue={defaultValue} required={required} className="field-input">
         {options.map((option) => (
-          <option key={option.value} value={option.value} className="bg-graphite">
+          <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
@@ -101,19 +99,39 @@ export function SelectField({
   );
 }
 
+export function Textarea({
+  name,
+  label,
+  placeholder,
+  rows = 2,
+  required,
+}: {
+  name: string;
+  label: string;
+  placeholder?: string;
+  rows?: number;
+  required?: boolean;
+}) {
+  return (
+    <textarea
+      name={name}
+      rows={rows}
+      required={required}
+      placeholder={placeholder}
+      aria-label={label}
+      className="field-textarea"
+    />
+  );
+}
+
 export function Alert({ state }: { state: { ok?: string; error?: string } | null }) {
   if (!state?.ok && !state?.error) return null;
-  const isError = Boolean(state.error);
 
   return (
     <p
       role="status"
       aria-live="polite"
-      className={`rounded-xl border px-4 py-3 text-sm ${
-        isError
-          ? "border-red-500/30 bg-red-500/10 text-red-200"
-          : "border-lime/30 bg-lime/10 text-lime"
-      }`}
+      className={`alert ${state.error ? "alert-error" : "alert-success"}`}
     >
       {state.error ?? state.ok}
     </p>
@@ -134,16 +152,12 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`surface-card rounded-2xl p-6 ${className}`}>
+    <section className={`panel ${className}`}>
       {title ? (
-        <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <header className="panel-header">
           <div>
-            <h2 className="font-display text-sm font-extrabold tracking-[0.14em] text-white uppercase">
-              {title}
-            </h2>
-            {description ? (
-              <p className="text-gray-valor mt-1.5 text-xs leading-relaxed">{description}</p>
-            ) : null}
+            <h2 className="panel-title">{title}</h2>
+            {description ? <p className="panel-description">{description}</p> : null}
           </div>
           {action}
         </header>
@@ -158,62 +172,78 @@ export function StatTile({
   value,
   meta,
   accent,
+  large,
 }: {
   label: string;
   value: string;
   meta?: string;
   accent?: boolean;
+  large?: boolean;
 }) {
   return (
-    <div className="border-hairline bg-ink/60 rounded-xl border p-4">
-      <p className="eyebrow text-[0.5625rem]">{label}</p>
+    <div className="tile">
+      <p className="tile-label">{label}</p>
       <p
-        className={`font-display mt-2 text-xl font-extrabold tracking-tight tabular-nums ${
-          accent ? "text-lime" : "text-white"
-        }`}
+        className={`tile-value ${accent ? "tile-value-accent" : ""} ${large ? "tile-value-lg" : ""}`}
       >
         {value}
       </p>
-      {meta ? <p className="text-gray-valor mt-1 text-[0.6875rem]">{meta}</p> : null}
+      {meta ? <p className="tile-meta">{meta}</p> : null}
     </div>
   );
 }
 
+/**
+ * Estado traduzido para o cliente.
+ *
+ * A cor carrega significado, mas nunca sozinha: o rótulo em texto sempre
+ * acompanha, porque cor isolada não é informação acessível.
+ */
+const STATUS_MAP: Record<string, { label: string; tone: string }> = {
+  ACTIVE: { label: "Ativo", tone: "pill-positive" },
+  SETTLED: { label: "Quitado", tone: "pill-neutral" },
+  AWAITING_SIGNATURE: { label: "Aguardando assinatura", tone: "pill-pending" },
+  DEFAULTED: { label: "Inadimplente", tone: "pill-negative" },
+  CANCELLED: { label: "Cancelado", tone: "pill-neutral" },
+  UNDER_REVIEW: { label: "Em análise", tone: "pill-pending" },
+  APPROVED: { label: "Aprovada", tone: "pill-positive" },
+  REJECTED: { label: "Recusada", tone: "pill-negative" },
+  CONTRACTED: { label: "Contratada", tone: "pill-positive" },
+  PAID: { label: "Paga", tone: "pill-positive" },
+  OPEN: { label: "Em aberto", tone: "pill-neutral" },
+  LATE: { label: "Em atraso", tone: "pill-negative" },
+  DRAFT: { label: "Em preenchimento", tone: "pill-neutral" },
+  SUBMITTED: { label: "Enviado", tone: "pill-pending" },
+  IN_REVIEW: { label: "Em análise", tone: "pill-pending" },
+  PENDING_KYC: { label: "Verificação pendente", tone: "pill-pending" },
+};
+
 export function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    ACTIVE: { label: "Ativo", className: "border-lime/40 bg-lime/10 text-lime" },
-    SETTLED: { label: "Quitado", className: "border-hairline-strong text-gray-valor" },
-    AWAITING_SIGNATURE: { label: "Aguardando assinatura", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-    DEFAULTED: { label: "Inadimplente", className: "border-red-500/40 bg-red-500/10 text-red-300" },
-    CANCELLED: { label: "Cancelado", className: "border-hairline-strong text-gray-valor" },
-    UNDER_REVIEW: { label: "Em análise", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-    APPROVED: { label: "Aprovada", className: "border-lime/40 bg-lime/10 text-lime" },
-    REJECTED: { label: "Recusada", className: "border-red-500/40 bg-red-500/10 text-red-300" },
-    CONTRACTED: { label: "Contratada", className: "border-lime/40 bg-lime/10 text-lime" },
-    PAID: { label: "Paga", className: "border-lime/40 bg-lime/10 text-lime" },
-    OPEN: { label: "Em aberto", className: "border-hairline-strong text-gray-valor" },
-    LATE: { label: "Em atraso", className: "border-red-500/40 bg-red-500/10 text-red-300" },
-    DRAFT: { label: "Em preenchimento", className: "border-hairline-strong text-gray-valor" },
-    SUBMITTED: { label: "Enviado", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-    IN_REVIEW: { label: "Em análise", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-    PENDING_KYC: { label: "Verificação pendente", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-  };
-
-  const item = map[status] ?? { label: status, className: "border-hairline-strong text-gray-valor" };
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[0.625rem] font-semibold tracking-[0.14em] uppercase ${item.className}`}
-    >
-      {item.label}
-    </span>
-  );
+  const item = STATUS_MAP[status] ?? { label: status, tone: "pill-neutral" };
+  return <span className={`pill ${item.tone}`}>{item.label}</span>;
 }
 
 export function SandboxNotice({ children }: { children: ReactNode }) {
+  return <p className="notice-sandbox">{children}</p>;
+}
+
+/** Cabeçalho de página da área logada. */
+export function PageHeading({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: ReactNode;
+}) {
   return (
-    <p className="border-amber-400/25 bg-amber-400/5 text-amber-200/90 rounded-xl border px-4 py-3 text-xs leading-relaxed">
-      {children}
-    </p>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h1 className="page-title">{title}</h1>
+      </div>
+      {action}
+    </div>
   );
 }

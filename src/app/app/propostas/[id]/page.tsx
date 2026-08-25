@@ -51,7 +51,7 @@ export default async function ApplicationPage({ params }: { params: Promise<{ id
         <StatusPill status={application.status} />
       </div>
 
-      <p className="text-gray-valor text-sm leading-relaxed">{copy.body}</p>
+      <p className="text-muted text-sm">{copy.body}</p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Valor solicitado" value={formatBRL(application.amountCents)} accent />
@@ -68,10 +68,10 @@ export default async function ApplicationPage({ params }: { params: Promise<{ id
       </div>
 
       <Panel title="Justificativa da decisão">
-        <p className="text-gray-valor text-sm leading-relaxed">
+        <p className="text-muted text-sm">
           {application.decisionReason ?? "Aguardando análise."}
         </p>
-        <p className="text-gray-valor mt-4 text-[0.6875rem]">
+        <p className="text-micro mt-4">
           Registrado em {application.createdAt.toLocaleString("pt-BR")} · finalidade:{" "}
           {application.purpose}
         </p>
@@ -80,7 +80,7 @@ export default async function ApplicationPage({ params }: { params: Promise<{ id
       {application.contract ? (
         <Link
           href={`/app/contratos/${application.contract.id}`}
-          className="bg-lime text-ink inline-flex items-center rounded-full px-6 py-3 text-sm font-semibold"
+          className="btn btn-primary btn-lg"
         >
           {application.contract.status === "AWAITING_SIGNATURE" ? "Ver e assinar contrato" : "Ver contrato"}
         </Link>

@@ -60,15 +60,8 @@ export function Header() {
             <ul className="flex items-center gap-1">
               {NAV.map((item) => (
                 <li key={item.href}>
-                  <a
-                    href={item.href}
-                    className="group text-gray-valor relative inline-flex items-center px-3.5 py-2 text-sm transition-colors duration-300 hover:text-white"
-                  >
+                  <a href={item.href} className="site-nav-link">
                     {item.label}
-                    <span
-                      aria-hidden="true"
-                      className="bg-lime absolute inset-x-3.5 bottom-1 h-px origin-left scale-x-0 transition-transform duration-500 ease-out group-hover:scale-x-100"
-                    />
                   </a>
                 </li>
               ))}
@@ -87,7 +80,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="border-hairline-strong inline-flex h-10 w-10 items-center justify-center rounded-full border text-white lg:hidden"
+            className="btn-icon h-10 w-10 lg:hidden"
             aria-expanded={open}
             aria-controls="menu-mobile"
             aria-label={open ? "Fechar menu" : "Abrir menu"}

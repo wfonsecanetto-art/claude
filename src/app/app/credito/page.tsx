@@ -56,7 +56,7 @@ export default async function CreditPage({
       </div>
 
       {!verified ? (
-        <p className="border-amber-400/30 bg-amber-400/10 rounded-xl border px-4 py-3 text-sm text-amber-200">
+        <p className="alert alert-warning">
           Conclua a{" "}
           <Link href="/app/verificacao" className="underline">
             verificação de identidade
@@ -81,7 +81,7 @@ export default async function CreditPage({
 
       <Panel title="Simulador" description="Os valores abaixo são os mesmos que irão para o contrato.">
         {clamped ? (
-          <p className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+          <p className="alert alert-warning mb-5">
             Ajustamos a simulação para {formatBRL(ceiling)}, seu limite disponível hoje. Quitar
             parcelas libera limite e aumenta seu score.
           </p>
@@ -104,35 +104,35 @@ export default async function CreditPage({
           />
         </div>
 
-        <details className="border-hairline mt-5 rounded-xl border p-4">
+        <details className="inset-box mt-5">
           <summary className="cursor-pointer text-sm font-semibold text-white">
             Ver as {quote.termMonths} parcelas
           </summary>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[420px] text-left text-xs">
-              <thead className="text-gray-valor">
+              <thead>
                 <tr className="border-hairline border-b">
-                  <th scope="col" className="pb-2 font-medium">Nº</th>
-                  <th scope="col" className="pb-2 font-medium">Vencimento</th>
-                  <th scope="col" className="pb-2 text-right font-medium">Amortização</th>
-                  <th scope="col" className="pb-2 text-right font-medium">Juros</th>
-                  <th scope="col" className="pb-2 text-right font-medium">Parcela</th>
+                  <th scope="col" >Nº</th>
+                  <th scope="col" >Vencimento</th>
+                  <th scope="col" className="cell-right">Amortização</th>
+                  <th scope="col" className="cell-right">Juros</th>
+                  <th scope="col" className="cell-right">Parcela</th>
                 </tr>
               </thead>
-              <tbody className="text-gray-valor">
+              <tbody>
                 {quote.installments.map((installment) => (
-                  <tr key={installment.number} className="border-hairline border-b last:border-0">
-                    <td className="py-2 text-white tabular-nums">{installment.number}</td>
-                    <td className="py-2 tabular-nums">
+                  <tr key={installment.number} >
+                    <td className="cell-strong">{installment.number}</td>
+                    <td >
                       {installment.dueDate.toLocaleDateString("pt-BR")}
                     </td>
-                    <td className="py-2 text-right tabular-nums">
+                    <td className="cell-right">
                       {formatBRL(installment.principalCents)}
                     </td>
-                    <td className="py-2 text-right tabular-nums">
+                    <td className="cell-right">
                       {formatBRL(installment.interestCents)}
                     </td>
-                    <td className="py-2 text-right text-white tabular-nums">
+                    <td className="cell-right cell-strong">
                       {formatBRL(installment.totalCents)}
                     </td>
                   </tr>

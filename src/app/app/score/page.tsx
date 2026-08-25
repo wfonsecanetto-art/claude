@@ -38,7 +38,7 @@ export default async function ScorePage() {
               level={position.score.level}
               size={200}
             />
-            <p className="text-gray-valor mt-4 text-center text-xs leading-relaxed">
+            <p className="text-muted mt-4 text-center text-xs">
               {position.score.pointsToNextLevel !== null && position.score.nextLevel
                 ? `Faltam ${position.score.pointsToNextLevel} pontos para ${position.score.nextLevel}.`
                 : "Nível máximo alcançado."}
@@ -50,18 +50,18 @@ export default async function ScorePage() {
           title="Como chegamos a este número"
           description="Cada fator abaixo tem peso fixo. Nada é caixa-preta."
         >
-          <ul className="divide-hairline divide-y">
+          <ul className="list-divided">
             {factors.map((factor) => (
-              <li key={factor.key} className="flex items-start justify-between gap-4 py-3">
+              <li key={factor.key} className="list-row list-row-start">
                 <div>
                   <p className="text-sm text-white">{factor.label}</p>
-                  <p className="text-gray-valor mt-1 text-[0.6875rem] leading-relaxed">
+                  <p className="text-micro mt-1">
                     {factor.detail}
                   </p>
                 </div>
                 <p
-                  className={`text-sm font-semibold tabular-nums ${
-                    factor.points > 0 ? "text-lime" : factor.points < 0 ? "text-red-300" : "text-gray-valor"
+                  className={`num text-sm font-semibold ${
+                    factor.points > 0 ? "text-lime" : factor.points < 0 ? "text-red-300" : "text-muted"
                   }`}
                 >
                   {factor.points > 0 ? "+" : ""}
@@ -74,18 +74,18 @@ export default async function ScorePage() {
       </div>
 
       <Panel title="Níveis e condições">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-xs">
-            <thead className="text-gray-valor">
-              <tr className="border-hairline border-b">
-                <th scope="col" className="pb-2 font-medium">Nível</th>
-                <th scope="col" className="pb-2 font-medium">Faixa</th>
-                <th scope="col" className="pb-2 text-right font-medium">Taxa</th>
-                <th scope="col" className="pb-2 text-right font-medium">Teto</th>
-                <th scope="col" className="pb-2 text-right font-medium">Cashback</th>
+        <div className="table-scroll">
+            <table className="table-valor" style={{ minWidth: "480px" }}>
+              <thead>
+                <tr>
+                <th scope="col" >Nível</th>
+                <th scope="col" >Faixa</th>
+                <th scope="col" className="cell-right">Taxa</th>
+                <th scope="col" className="cell-right">Teto</th>
+                <th scope="col" className="cell-right">Cashback</th>
               </tr>
             </thead>
-            <tbody className="text-gray-valor">
+            <tbody>
               {SCORE_LEVELS.map((level) => {
                 const current = level === position.score.level;
                 return (
@@ -97,16 +97,16 @@ export default async function ScorePage() {
                       {level}
                       {current ? " · você" : ""}
                     </td>
-                    <td className="py-2.5 tabular-nums">
+                    <td >
                       {LEVEL_RANGES[level].min} – {LEVEL_RANGES[level].max}
                     </td>
-                    <td className="py-2.5 text-right tabular-nums">
+                    <td className="cell-right">
                       {formatBps(LEVEL_POLICY[level].monthlyRateBps)} a.m.
                     </td>
-                    <td className="py-2.5 text-right tabular-nums">
+                    <td className="cell-right">
                       {formatBRLCompact(LEVEL_POLICY[level].limitCents)}
                     </td>
-                    <td className="py-2.5 text-right tabular-nums">
+                    <td className="cell-right">
                       {formatBps(LEVEL_POLICY[level].cashbackOnInterestBps, 0)} dos juros
                     </td>
                   </tr>
@@ -115,7 +115,7 @@ export default async function ScorePage() {
             </tbody>
           </table>
         </div>
-        <p className="text-gray-valor mt-4 text-[0.6875rem] leading-relaxed">
+        <p className="text-micro mt-4">
           O limite efetivo é o menor entre o teto do nível e 30% da renda declarada projetada em 12
           meses.
         </p>
@@ -123,16 +123,16 @@ export default async function ScorePage() {
 
       {history.length > 1 ? (
         <Panel title="Histórico">
-          <ul className="divide-hairline divide-y">
+          <ul className="list-divided">
             {history.map((snapshot) => (
-              <li key={snapshot.id} className="flex items-center justify-between gap-4 py-2.5">
+              <li key={snapshot.id} className="list-row">
                 <div>
                   <p className="text-sm text-white">{snapshot.reason}</p>
-                  <p className="text-gray-valor mt-1 text-[0.6875rem]">
+                  <p className="text-micro mt-1">
                     {snapshot.createdAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                   </p>
                 </div>
-                <p className="font-display text-sm font-extrabold text-white tabular-nums">
+                <p className="font-display num text-sm font-extrabold text-white">
                   {snapshot.points}
                 </p>
               </li>

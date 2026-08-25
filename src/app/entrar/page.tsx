@@ -14,9 +14,9 @@ export default function SignInPage() {
       title="Entrar"
       subtitle="Acesse sua Conta Valor para acompanhar limite, contratos e pagamentos."
       footer={
-        <p className="text-gray-valor text-sm">
+        <p className="text-muted text-sm">
           Ainda não tem conta?{" "}
-          <Link href="/criar-conta" className="text-lime hover:underline">
+          <Link href="/criar-conta" className="link-lime">
             Criar conta
           </Link>
         </p>
@@ -26,7 +26,7 @@ export default function SignInPage() {
         <Alert state={state} />
         <Field label="E-mail" name="email" type="email" autoComplete="email" required />
         <Field label="Senha" name="password" type="password" autoComplete="current-password" required />
-        <SubmitButton className="w-full" pendingLabel="Entrando…">
+        <SubmitButton block pendingLabel="Entrando…">
           Entrar
         </SubmitButton>
       </form>

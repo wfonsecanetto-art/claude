@@ -191,6 +191,9 @@ src/app/
   api/documentos/[id]/     Entrega autenticada de documento privado
 
 src/components/            Seções do site, primitivas do app, objeto 3D
+
+src/app/globals.css        Tokens, reset e animações
+src/app/styles.css         Classes de componente do sistema visual
 ```
 
 Mutações usam **Server Actions**; leituras acontecem em **Server Components**.
@@ -204,6 +207,38 @@ matemática, e a página funciona sem JavaScript.
 Verde-limão `#B7FF00` sobre preto `#050505`, Manrope nos títulos e Inter no
 texto. O contraste entre título gigante e microtexto técnico é o que dá a
 linguagem editorial.
+
+### Onde mexer no visual
+
+O estilo mora em dois arquivos, com responsabilidades separadas:
+
+| Arquivo | Contém |
+| --- | --- |
+| `src/app/globals.css` | Tokens (`@theme`), reset, base e animações contínuas |
+| `src/app/styles.css` | As classes de componente: botões, formulários, painéis, indicadores, pílulas de estado, tabelas, listas e navegação |
+
+O JSX descreve estrutura e conteúdo; a aparência de qualquer elemento recorrente
+se resolve em `styles.css`. Utilitários do Tailwind ficam só para layout pontual
+(grid, gap, espaçamento de página). Na prática:
+
+```tsx
+<button className="btn btn-primary">Solicitar crédito</button>
+<div className="tile">
+  <p className="tile-label">Limite disponível</p>
+  <p className="tile-value tile-value-accent">R$ 1.068,60</p>
+</div>
+```
+
+Trocar a cor de todos os botões primários, o raio das superfícies ou o
+espaçamento das tabelas é uma alteração em um lugar só — e dá para ler o sistema
+inteiro percorrendo um arquivo, em vez de caçar strings de utilitários no meio
+do JSX.
+
+Duas decisões que valem registro: o estado ativo da navegação é lido do
+`aria-current` pelo próprio CSS (`.app-nav-link[aria-current="page"]`), então
+tela e leitor de tela partem da mesma fonte de verdade; e existe um token
+`--color-text-muted` um degrau mais claro que o cinza da marca, porque abaixo de
+12px `#a5a5a5` sobre preto cansa a leitura.
 
 O objeto 3D do hero (React Three Fiber) é carregado sob demanda e só em tela
 grande com ponteiro fino e WebGL disponível; nos demais casos entra uma

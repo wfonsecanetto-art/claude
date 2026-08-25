@@ -34,24 +34,24 @@ export default async function TransferPage() {
 
       <Panel title="Últimas transferências">
         {transfers.length === 0 ? (
-          <p className="text-gray-valor text-sm">Nenhuma transferência ainda.</p>
+          <p className="text-muted text-sm">Nenhuma transferência ainda.</p>
         ) : (
-          <ul className="divide-hairline divide-y">
+          <ul className="list-divided">
             {transfers.map((transfer) => {
               const sent = transfer.fromUserId === user.id;
               const counterpart = sent ? transfer.toUser.name : transfer.fromUser.name;
               return (
-                <li key={transfer.id} className="flex items-center justify-between gap-4 py-3">
+                <li key={transfer.id} className="list-row">
                   <div>
                     <p className="text-sm text-white">
                       {sent ? "Para" : "De"} {counterpart}
                     </p>
-                    <p className="text-gray-valor mt-1 text-[0.6875rem]">
+                    <p className="text-micro mt-1">
                       {transfer.createdAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                       {transfer.description ? ` · ${transfer.description}` : ""}
                     </p>
                   </div>
-                  <p className={`text-sm font-semibold tabular-nums ${sent ? "text-white" : "text-lime"}`}>
+                  <p className={`num text-sm font-semibold ${sent ? "text-white" : "text-lime"}`}>
                     {sent ? "−" : "+"} {formatBRL(transfer.amountCents)}
                   </p>
                 </li>

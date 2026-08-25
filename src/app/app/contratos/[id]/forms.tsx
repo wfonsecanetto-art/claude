@@ -13,8 +13,8 @@ export function SignContractForm({ contractId }: { contractId: string }) {
     <form action={formAction} className="space-y-4">
       <Alert state={state} />
       <input type="hidden" name="contractId" value={contractId} />
-      <label className="flex items-start gap-3 text-sm text-white">
-        <input type="checkbox" name="accept" className="accent-lime mt-0.5" required />
+      <label className="checkbox-row">
+        <input type="checkbox" name="accept" className="field-checkbox mt-0.5" required />
         <span>
           Li e aceito as condições, incluindo taxa de juros, IOF, prazo e Custo Efetivo Total.
         </span>

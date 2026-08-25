@@ -60,18 +60,18 @@ export default async function BackofficePage() {
         description="Confira documentos e dados antes de aprovar. A decisão fica registrada na auditoria."
       >
         {kycQueue.length === 0 ? (
-          <p className="text-gray-valor text-sm">Nenhum cadastro na fila.</p>
+          <p className="text-muted text-sm">Nenhum cadastro na fila.</p>
         ) : (
           <ul className="space-y-5">
             {kycQueue.map((kyc) => (
-              <li key={kyc.id} className="border-hairline rounded-xl border p-5">
+              <li key={kyc.id} className="queue-item">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold text-white">{kyc.user.name}</p>
-                    <p className="text-gray-valor mt-1 text-xs">
+                    <p className="text-micro mt-1">
                       {formatCpf(kyc.user.cpf)} · {kyc.user.email}
                     </p>
-                    <p className="text-gray-valor mt-1 text-xs">
+                    <p className="text-micro mt-1">
                       {kyc.occupation} · renda {formatBRL(kyc.monthlyIncomeCents)} ·{" "}
                       {kyc.city}/{kyc.state}
                     </p>
@@ -86,7 +86,7 @@ export default async function BackofficePage() {
                       href={`/api/documentos/${document.id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="border-hairline text-gray-valor hover:border-lime/40 hover:text-lime rounded-full border px-3 py-1.5 text-[0.6875rem] transition-colors"
+                      className="doc-chip"
                     >
                       {DOCUMENT_TYPES[document.type as DocumentType] ?? document.type}
                     </a>
@@ -94,7 +94,7 @@ export default async function BackofficePage() {
                 </div>
 
                 {kyc.user.references.length > 0 ? (
-                  <p className="text-gray-valor mt-3 text-[0.6875rem]">
+                  <p className="text-micro mt-3">
                     Referências:{" "}
                     {kyc.user.references
                       .map((reference) => `${reference.name} (${reference.relationship})`)
@@ -116,21 +116,21 @@ export default async function BackofficePage() {
         description="Casos que a política automática não resolveu sozinha."
       >
         {applicationQueue.length === 0 ? (
-          <p className="text-gray-valor text-sm">Nenhuma proposta na fila.</p>
+          <p className="text-muted text-sm">Nenhuma proposta na fila.</p>
         ) : (
           <ul className="space-y-5">
             {applicationQueue.map((application) => (
-              <li key={application.id} className="border-hairline rounded-xl border p-5">
+              <li key={application.id} className="queue-item">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold text-white">{application.user.name}</p>
-                    <p className="text-gray-valor mt-1 text-xs tabular-nums">
+                    <p className="text-micro num mt-1">
                       {formatBRL(application.amountCents)} em {application.termMonths}x ·{" "}
                       parcela{" "}
                       {application.installmentCents ? formatBRL(application.installmentCents) : "—"} ·{" "}
                       CET {application.cetYearlyBps ? formatBps(application.cetYearlyBps) : "—"} a.a.
                     </p>
-                    <p className="text-gray-valor mt-1 text-xs">
+                    <p className="text-micro mt-1">
                       Score {application.scoreAtDecision} · renda{" "}
                       {application.user.kyc ? formatBRL(application.user.kyc.monthlyIncomeCents) : "—"} ·{" "}
                       finalidade: {application.purpose}
@@ -139,7 +139,7 @@ export default async function BackofficePage() {
                   <StatusPill status={application.status} />
                 </div>
 
-                <p className="text-gray-valor mt-3 text-xs leading-relaxed">
+                <p className="text-muted mt-3 text-xs">
                   Motivo do encaminhamento: {application.decisionReason}
                 </p>
 
@@ -153,32 +153,32 @@ export default async function BackofficePage() {
       </Panel>
 
       <Panel title="Auditoria" description="Últimos eventos registrados na plataforma.">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left text-xs">
-            <thead className="text-gray-valor">
-              <tr className="border-hairline border-b">
-                <th scope="col" className="pb-2 font-medium">Quando</th>
-                <th scope="col" className="pb-2 font-medium">Autor</th>
-                <th scope="col" className="pb-2 font-medium">Ação</th>
-                <th scope="col" className="pb-2 font-medium">Entidade</th>
+        <div className="table-scroll">
+            <table className="table-valor" style={{ minWidth: "520px" }}>
+              <thead>
+                <tr>
+                <th scope="col" >Quando</th>
+                <th scope="col" >Autor</th>
+                <th scope="col" >Ação</th>
+                <th scope="col" >Entidade</th>
               </tr>
             </thead>
-            <tbody className="text-gray-valor">
+            <tbody>
               {audit.map((log) => (
-                <tr key={log.id} className="border-hairline border-b last:border-0">
-                  <td className="py-2 tabular-nums">
+                <tr key={log.id} >
+                  <td >
                     {log.createdAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                   </td>
-                  <td className="py-2">{log.actor?.name ?? "sistema"}</td>
-                  <td className="py-2 text-white">{log.action}</td>
-                  <td className="py-2">{log.entity}</td>
+                  <td >{log.actor?.name ?? "sistema"}</td>
+                  <td className="cell-strong">{log.action}</td>
+                  <td >{log.entity}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="text-gray-valor mt-4 text-[0.6875rem]">
-          <Link href="/app" className="hover:text-lime underline">
+        <p className="text-micro mt-4">
+          <Link href="/app" className="link-lime underline">
             Voltar para a conta
           </Link>
         </p>

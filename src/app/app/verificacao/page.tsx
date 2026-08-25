@@ -29,13 +29,13 @@ export default async function VerificationPage() {
       </div>
 
       {kyc?.status === "REJECTED" && kyc.rejectionReason ? (
-        <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <p className="alert alert-error">
           Cadastro recusado: {kyc.rejectionReason} Corrija os dados e envie novamente.
         </p>
       ) : null}
 
       {state.kycStatus === "APPROVED" ? (
-        <p className="border-lime/30 bg-lime/10 text-lime rounded-xl border px-4 py-3 text-sm">
+        <p className="alert alert-success">
           Cadastro aprovado. Seu limite já está disponível na página de crédito.
         </p>
       ) : null}
@@ -56,7 +56,7 @@ export default async function VerificationPage() {
               ],
             ].map(([label, value]) => (
               <div key={String(label)}>
-                <dt className="eyebrow text-[0.5625rem]">{label}</dt>
+                <dt className="tile-label">{label}</dt>
                 <dd className="mt-1.5 text-sm text-white">{value ?? "—"}</dd>
               </div>
             ))}
@@ -112,10 +112,10 @@ export default async function VerificationPage() {
         <Panel title="Enviar para análise">
           {state.missing.length > 0 ? (
             <div>
-              <p className="text-gray-valor text-sm">Ainda falta:</p>
+              <p className="text-muted text-sm">Ainda falta:</p>
               <ul className="mt-3 space-y-1.5">
                 {state.missing.map((item) => (
-                  <li key={item} className="text-gray-valor flex items-center gap-2 text-xs">
+                  <li key={item} className="text-muted flex items-center gap-2 text-xs">
                     <span className="h-1 w-1 rounded-full bg-amber-400" aria-hidden="true" />
                     {item}
                   </li>

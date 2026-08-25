@@ -14,7 +14,7 @@ import { Alert, Field, SubmitButton } from "@/components/app/ui";
 export function StartMfaForm() {
   return (
     <form action={startMfaSetupAction} className="space-y-4">
-      <p className="text-gray-valor text-sm leading-relaxed">
+      <p className="text-muted text-sm">
         Ative a verificação em duas etapas para exigir um código do seu aplicativo autenticador a
         cada acesso.
       </p>

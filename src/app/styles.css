@@ -1,0 +1,834 @@
+/* ==========================================================================
+   BANCO VALOR DIGITAL — Camada de componentes
+   ==========================================================================
+
+   Aqui mora o sistema visual: botões, formulários, superfícies, tabelas,
+   estados e navegação. O JSX descreve estrutura e conteúdo; a aparência de
+   qualquer elemento recorrente se resolve neste arquivo.
+
+   Divisão de responsabilidade:
+     globals.css  → tokens (@theme), reset, base e animações contínuas
+     styles.css   → classes semânticas dos componentes (este arquivo)
+     utilitários  → só para layout pontual (grid, gap, espaçamento de página)
+
+   Regra de bordas: `.u-line` e as bordas de componentes usam --color-hairline;
+   contornos que precisam ser percebidos usam --color-hairline-strong.
+   ========================================================================== */
+
+@layer components {
+  /* ------------------------------------------------------------------
+     1. LAYOUT
+  ------------------------------------------------------------------ */
+
+  .container-valor {
+    width: 100%;
+    max-width: 84rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .container-valor {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-valor {
+      padding-inline: 3.5rem;
+    }
+  }
+
+  /* Trilhos full-bleed alinhados ao container editorial.
+     O scroll-padding acompanha o padding: sem ele, o snap arrasta o trilho
+     para encostar o primeiro card na borda da tela. */
+  .rail-inset {
+    padding-inline: max(1.25rem, calc((100% - 84rem) / 2 + 1.25rem));
+    scroll-padding-inline: max(1.25rem, calc((100% - 84rem) / 2 + 1.25rem));
+  }
+
+  @media (min-width: 768px) {
+    .rail-inset {
+      padding-inline: max(2.5rem, calc((100% - 84rem) / 2 + 2.5rem));
+      scroll-padding-inline: max(2.5rem, calc((100% - 84rem) / 2 + 2.5rem));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .rail-inset {
+      padding-inline: max(3.5rem, calc((100% - 84rem) / 2 + 3.5rem));
+      scroll-padding-inline: max(3.5rem, calc((100% - 84rem) / 2 + 3.5rem));
+    }
+  }
+
+  /* Casca da área logada: cabeçalho fixo, coluna de navegação e conteúdo. */
+  .app-shell {
+    min-height: 100svh;
+  }
+
+  .app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    border-bottom: 1px solid var(--color-hairline);
+    background-color: color-mix(in srgb, var(--color-graphite) 60%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  .app-topbar-inner {
+    display: flex;
+    height: 4rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .app-body {
+    display: grid;
+    gap: 2rem;
+    padding-block: 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-body {
+      grid-template-columns: 220px minmax(0, 1fr);
+      padding-block: 3rem;
+    }
+
+    .app-sidebar {
+      position: sticky;
+      top: 6rem;
+      align-self: start;
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     2. TIPOGRAFIA
+  ------------------------------------------------------------------ */
+
+  /* Microtexto técnico — o contraponto editorial dos títulos gigantes. */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-gray-valor);
+  }
+
+  .eyebrow-xs {
+    font-size: 0.5625rem;
+    letter-spacing: 0.2em;
+  }
+
+  .eyebrow-on {
+    color: #ffffff;
+  }
+
+  .display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    text-transform: uppercase;
+  }
+
+  /* Título de página da área logada. */
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 1.875rem;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin-top: 0.5rem;
+  }
+
+  /* Texto de apoio. Um pouco mais claro que o cinza da marca porque, em
+     tamanhos pequenos, #a5a5a5 sobre preto cansa a leitura. */
+  .text-muted {
+    color: var(--color-text-muted);
+    line-height: 1.65;
+  }
+
+  .text-micro {
+    font-size: 0.6875rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+
+  /* Números alinham em coluna: dígitos de mesma largura. */
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rule-lime {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-lime) 35%,
+      var(--color-lime) 65%,
+      transparent
+    );
+  }
+
+  /* ------------------------------------------------------------------
+     3. SUPERFÍCIES
+  ------------------------------------------------------------------ */
+
+  .surface-card {
+    background: linear-gradient(160deg, rgba(23, 27, 27, 0.9), rgba(5, 5, 5, 0.9));
+    border: 1px solid var(--color-hairline);
+  }
+
+  /* Vidro discreto — header do site e cards sobrepostos. */
+  .glass {
+    background-color: rgba(16, 19, 19, 0.72);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid var(--color-hairline);
+  }
+
+  /* Bloco padrão da área logada. */
+  .panel {
+    background: linear-gradient(160deg, rgba(23, 27, 27, 0.9), rgba(5, 5, 5, 0.9));
+    border: 1px solid var(--color-hairline);
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+
+  .panel-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .panel-description {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+
+  /* Caixa interna, um degrau abaixo do painel. */
+  .inset-box {
+    border: 1px solid var(--color-hairline);
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+    padding: 1rem;
+  }
+
+  /* ------------------------------------------------------------------
+     4. INDICADORES NUMÉRICOS
+  ------------------------------------------------------------------ */
+
+  .tile {
+    border: 1px solid var(--color-hairline);
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+    padding: 1rem;
+    transition: border-color 320ms var(--ease-valor);
+  }
+
+  .tile:hover {
+    border-color: color-mix(in srgb, var(--color-lime) 28%, transparent);
+  }
+
+  .tile-label {
+    font-family: var(--font-sans);
+    font-size: 0.5625rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-gray-valor);
+  }
+
+  .tile-value {
+    font-family: var(--font-display);
+    margin-top: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: #ffffff;
+  }
+
+  .tile-value-accent {
+    color: var(--color-lime);
+  }
+
+  .tile-value-lg {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1;
+  }
+
+  .tile-meta {
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+  }
+
+  /* ------------------------------------------------------------------
+     5. BOTÕES
+  ------------------------------------------------------------------ */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition:
+      background-color 300ms var(--ease-valor),
+      border-color 300ms var(--ease-valor),
+      color 300ms var(--ease-valor),
+      box-shadow 300ms var(--ease-valor);
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .btn-primary {
+    background-color: var(--color-lime);
+    color: var(--color-ink);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-lime-bright);
+    box-shadow: var(--shadow-glow-sm);
+  }
+
+  .btn-outline {
+    border: 1px solid var(--color-hairline-strong);
+    color: #ffffff;
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-lime) 60%, transparent);
+    color: var(--color-lime);
+  }
+
+  .btn-ghost {
+    padding: 0.5rem 1rem;
+    color: #ffffff;
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--color-lime);
+  }
+
+  /* Ações destrutivas ou de desativação: vermelho, nunca verde-limão. */
+  .btn-danger {
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #fecaca;
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-lg {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+  }
+
+  .btn-block {
+    width: 100%;
+  }
+
+  /* Botão redondo de ícone — setas do trilho, fechar menu. */
+  .btn-icon {
+    display: inline-flex;
+    height: 2.75rem;
+    width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid var(--color-hairline-strong);
+    color: #ffffff;
+    transition:
+      border-color 300ms var(--ease-valor),
+      color 300ms var(--ease-valor);
+  }
+
+  .btn-icon:hover {
+    border-color: color-mix(in srgb, var(--color-lime) 60%, transparent);
+    color: var(--color-lime);
+  }
+
+  /* Link textual em verde-limão. */
+  .link-lime {
+    color: var(--color-lime);
+    transition: opacity 200ms var(--ease-valor);
+  }
+
+  .link-lime:hover {
+    text-decoration: underline;
+  }
+
+  /* ------------------------------------------------------------------
+     6. FORMULÁRIOS
+  ------------------------------------------------------------------ */
+
+  .field-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-gray-valor);
+  }
+
+  .field-required {
+    color: var(--color-lime);
+  }
+
+  .field-input {
+    width: 100%;
+    border: 1px solid var(--color-hairline);
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #ffffff;
+    transition:
+      border-color 300ms var(--ease-valor),
+      background-color 300ms var(--ease-valor);
+  }
+
+  .field-input::placeholder {
+    color: color-mix(in srgb, var(--color-gray-valor) 65%, transparent);
+  }
+
+  .field-input:hover {
+    border-color: var(--color-hairline-strong);
+  }
+
+  .field-input:focus {
+    border-color: color-mix(in srgb, var(--color-lime) 60%, transparent);
+    outline: none;
+  }
+
+  /* O select precisa da seta desenhada: a nativa não segue o tema escuro. */
+  select.field-input {
+    appearance: none;
+    padding-right: 2.5rem;
+    background-image: linear-gradient(45deg, transparent 50%, var(--color-gray-valor) 50%),
+      linear-gradient(135deg, var(--color-gray-valor) 50%, transparent 50%);
+    background-position:
+      calc(100% - 1.15rem) 1.15rem,
+      calc(100% - 0.85rem) 1.15rem;
+    background-size:
+      5px 5px,
+      5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  select.field-input option {
+    background-color: var(--color-graphite);
+    color: #ffffff;
+  }
+
+  .field-hint {
+    margin-top: 0.375rem;
+    font-size: 0.6875rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+  }
+
+  .field-textarea {
+    width: 100%;
+    border: 1px solid var(--color-hairline);
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #ffffff;
+    resize: vertical;
+  }
+
+  .field-textarea::placeholder {
+    color: color-mix(in srgb, var(--color-gray-valor) 65%, transparent);
+  }
+
+  .field-textarea:focus {
+    border-color: color-mix(in srgb, var(--color-lime) 60%, transparent);
+    outline: none;
+  }
+
+  /* Seletor de arquivo: o botão nativo é substituído por uma pílula. */
+  .field-file {
+    width: 100%;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .field-file::file-selector-button {
+    margin-right: 0.75rem;
+    border: 0;
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--color-lime) 12%, transparent);
+    color: var(--color-lime);
+    padding: 0.375rem 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 300ms var(--ease-valor);
+  }
+
+  .field-file::file-selector-button:hover {
+    background-color: color-mix(in srgb, var(--color-lime) 22%, transparent);
+  }
+
+  .field-checkbox {
+    accent-color: var(--color-lime);
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .field-range {
+    width: 100%;
+    accent-color: var(--color-lime);
+  }
+
+  /* Rótulo com caixa de seleção — aceite de contrato. */
+  .checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #ffffff;
+  }
+
+  /* ------------------------------------------------------------------
+     7. MENSAGENS E AVISOS
+  ------------------------------------------------------------------ */
+
+  .alert {
+    border-radius: 0.75rem;
+    border: 1px solid;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .alert-success {
+    border-color: color-mix(in srgb, var(--color-lime) 30%, transparent);
+    background-color: color-mix(in srgb, var(--color-lime) 10%, transparent);
+    color: var(--color-lime);
+  }
+
+  .alert-error {
+    border-color: rgba(239, 68, 68, 0.3);
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #fecaca;
+  }
+
+  .alert-warning {
+    border-color: rgba(251, 191, 36, 0.3);
+    background-color: rgba(251, 191, 36, 0.1);
+    color: #fde68a;
+  }
+
+  /* Aviso de ambiente de homologação. Sempre âmbar: não pode ser confundido
+     com um estado normal do produto. */
+  .notice-sandbox {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    background-color: rgba(251, 191, 36, 0.05);
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    line-height: 1.65;
+    color: rgba(253, 230, 138, 0.9);
+  }
+
+  /* Faixa de chamada para ação dentro do app. */
+  .callout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-lime) 30%, transparent);
+    background-color: color-mix(in srgb, var(--color-lime) 6%, transparent);
+    padding: 1.25rem;
+  }
+
+  /* ------------------------------------------------------------------
+     8. PÍLULAS DE ESTADO
+  ------------------------------------------------------------------ */
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 9999px;
+    border: 1px solid;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .pill-positive {
+    border-color: color-mix(in srgb, var(--color-lime) 40%, transparent);
+    background-color: color-mix(in srgb, var(--color-lime) 10%, transparent);
+    color: var(--color-lime);
+  }
+
+  .pill-pending {
+    border-color: rgba(251, 191, 36, 0.4);
+    background-color: rgba(251, 191, 36, 0.1);
+    color: #fcd34d;
+  }
+
+  .pill-negative {
+    border-color: rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+  }
+
+  .pill-neutral {
+    border-color: var(--color-hairline-strong);
+    color: var(--color-text-muted);
+  }
+
+  /* ------------------------------------------------------------------
+     9. TABELAS E LISTAS
+  ------------------------------------------------------------------ */
+
+  /* Tabelas largas rolam dentro da própria caixa; a página nunca rola lateral. */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-valor {
+    width: 100%;
+    text-align: left;
+    font-size: 0.75rem;
+    border-collapse: collapse;
+  }
+
+  .table-valor thead th {
+    padding-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--color-gray-valor);
+    border-bottom: 1px solid var(--color-hairline);
+    white-space: nowrap;
+  }
+
+  .table-valor tbody td {
+    padding-block: 0.625rem;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-hairline);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .table-valor tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .table-valor tbody tr {
+    transition: background-color 240ms var(--ease-valor);
+  }
+
+  .table-valor tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  /* Célula que carrega a informação principal da linha. */
+  .table-valor .cell-strong {
+    color: #ffffff;
+  }
+
+  .table-valor .cell-right {
+    text-align: right;
+  }
+
+  /* Linha destacada: o nível em que o cliente está. */
+  .table-valor tbody tr.row-current td {
+    background-color: color-mix(in srgb, var(--color-lime) 6%, transparent);
+  }
+
+  /* Lista com divisores — extrato, referências, auditoria. */
+  .list-divided > * + * {
+    border-top: 1px solid var(--color-hairline);
+  }
+
+  .list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.75rem;
+  }
+
+  .list-row-start {
+    align-items: flex-start;
+  }
+
+  /* ------------------------------------------------------------------
+     10. NAVEGAÇÃO
+  ------------------------------------------------------------------ */
+
+  .app-nav-list {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-nav-list {
+      flex-direction: column;
+    }
+  }
+
+  .app-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+    transition:
+      background-color 300ms var(--ease-valor),
+      color 300ms var(--ease-valor);
+  }
+
+  .app-nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+  }
+
+  .app-nav-link[aria-current="page"] {
+    background-color: color-mix(in srgb, var(--color-lime) 10%, transparent);
+    color: var(--color-lime);
+  }
+
+  /* Item do menu do site institucional, com sublinhado que cresce. */
+  .site-nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    color: var(--color-gray-valor);
+    transition: color 300ms var(--ease-valor);
+  }
+
+  .site-nav-link:hover {
+    color: #ffffff;
+  }
+
+  .site-nav-link::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0.875rem;
+    bottom: 0.25rem;
+    height: 1px;
+    background-color: var(--color-lime);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 500ms var(--ease-valor);
+  }
+
+  .site-nav-link:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Selo de seção do backoffice. */
+  .badge-lime {
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--color-lime) 30%, transparent);
+    background-color: color-mix(in srgb, var(--color-lime) 10%, transparent);
+    padding: 0.25rem 0.625rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-lime);
+  }
+
+  /* ------------------------------------------------------------------
+     11. CARTÕES DE CONTEÚDO
+  ------------------------------------------------------------------ */
+
+  /* Card clicável de lista (contratos, propostas). */
+  .card-link {
+    display: block;
+    border-radius: 1rem;
+    border: 1px solid var(--color-hairline);
+    background: linear-gradient(160deg, rgba(23, 27, 27, 0.9), rgba(5, 5, 5, 0.9));
+    padding: 1.25rem;
+    transition:
+      border-color 300ms var(--ease-valor),
+      transform 300ms var(--ease-valor);
+  }
+
+  .card-link:hover {
+    border-color: color-mix(in srgb, var(--color-lime) 30%, transparent);
+    transform: translateY(-2px);
+  }
+
+  /* Item da fila de análise no backoffice. */
+  .queue-item {
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-hairline);
+    padding: 1.25rem;
+  }
+
+  /* Etiqueta de documento anexado. */
+  .doc-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid var(--color-hairline);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    transition:
+      border-color 300ms var(--ease-valor),
+      color 300ms var(--ease-valor);
+  }
+
+  .doc-chip:hover {
+    border-color: color-mix(in srgb, var(--color-lime) 40%, transparent);
+    color: var(--color-lime);
+  }
+}
