@@ -4,14 +4,25 @@
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
+
   "postCreateCommand": "npm install && npm run setup",
-  "forwardPorts": [3000],
+
+  // Sobe o servidor ao abrir o ambiente. Sem isto, a porta encaminhada existe
+  // mas nada escuta nela, e o navegador responde "conexão recusada".
+  "postAttachCommand": {
+    "servidor": "npm run dev -- --hostname 0.0.0.0"
+  },
+
+  // Sem "forwardPorts": encaminhar a porta de antemão faz o preview abrir
+  // antes de o servidor existir. Deixando o Codespaces detectar a porta
+  // quando ela começa a escutar, o preview abre na hora certa.
   "portsAttributes": {
     "3000": {
       "label": "Banco Valor Digital",
       "onAutoForward": "openPreview"
     }
   },
+
   "customizations": {
     "vscode": {
       "extensions": [
@@ -22,5 +33,6 @@
       ]
     }
   },
+
   "remoteUser": "node"
 }

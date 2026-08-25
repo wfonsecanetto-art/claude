@@ -37,12 +37,31 @@ repositório não é opção.
 
 ### 2. No navegador, sem instalar nada (GitHub Codespaces)
 
-No GitHub, na branch do projeto: **Code → Codespaces → Create codespace**.
-O ambiente já vem configurado (`.devcontainer/devcontainer.json`): instala as
-dependências, prepara o banco e encaminha a porta 3000 sozinho. Quando o
-terminal liberar, rode `npm run dev` e abra a porta encaminhada.
+No GitHub: **Code → Codespaces → Create codespace**. O ambiente já vem
+configurado em `.devcontainer/devcontainer.json` — instala as dependências,
+prepara o banco e sobe o servidor sozinho. Quando a porta 3000 começar a
+escutar, o Codespaces encaminha e abre o preview.
 
 É o caminho para só olhar o projeto funcionando, sem mexer na sua máquina.
+
+**Se aparecer "conexão recusada"**, é porque nada está escutando na porta ainda.
+Ou a preparação inicial não terminou (`npm install` mais migrações e carga
+levam alguns minutos), ou ela falhou. No terminal do Codespace:
+
+```bash
+npm run dev -- --hostname 0.0.0.0
+```
+
+Se der erro de dependência ou de banco, refaça a preparação e suba de novo:
+
+```bash
+npm install && npm run setup
+npm run dev -- --hostname 0.0.0.0
+```
+
+Depois abra a aba **PORTS** e clique no globo da porta 3000. Note que a porta
+encaminhada nasce privada: para mandar o link a outra pessoa, mude a
+visibilidade para **Public** com o botão direito sobre a porta.
 
 ### 3. Docker
 
