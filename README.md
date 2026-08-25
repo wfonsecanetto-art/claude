@@ -13,11 +13,19 @@ entrada e motor de crédito próprio.
 
 ---
 
-## Rodando
+## Onde rodar
 
-Não é preciso instalar banco de dados: o padrão é SQLite em arquivo.
+Três caminhos, do mais simples ao mais completo.
+
+### 1. Na sua máquina
+
+Precisa de Node 20.9 ou mais novo. Não precisa instalar banco: o padrão é
+SQLite em arquivo.
 
 ```bash
+git clone https://github.com/wfonsecanetto-art/claude.git
+cd claude && git checkout claude/banco-valor-digital-design-3sogzc
+
 npm install          # instala, cria o .env com um segredo novo e gera o Prisma Client
 npm run setup        # aplica as migrações e popula o ambiente
 npm run dev          # http://localhost:3000
@@ -26,6 +34,53 @@ npm run dev          # http://localhost:3000
 O `.env` é criado na instalação com um `AUTH_SECRET` aleatório e não é
 versionado — assinar sessão de produto financeiro com chave pública no
 repositório não é opção.
+
+### 2. No navegador, sem instalar nada (GitHub Codespaces)
+
+No GitHub, na branch do projeto: **Code → Codespaces → Create codespace**.
+O ambiente já vem configurado (`.devcontainer/devcontainer.json`): instala as
+dependências, prepara o banco e encaminha a porta 3000 sozinho. Quando o
+terminal liberar, rode `npm run dev` e abra a porta encaminhada.
+
+É o caminho para só olhar o projeto funcionando, sem mexer na sua máquina.
+
+### 3. Docker
+
+```bash
+docker build -t valor .
+docker run -p 3000:3000 \
+  -e AUTH_SECRET="$(openssl rand -hex 32)" \
+  -v valor-data:/app/data \
+  -v valor-storage:/app/storage \
+  valor
+```
+
+O contêiner aplica as migrações, semeia o ambiente na primeira subida e sobe em
+`http://localhost:3000`. Banco e documentos ficam nos volumes, então reiniciar
+não perde nada.
+
+> O `Dockerfile` foi montado a partir dos mesmos passos que rodam neste
+> repositório (`npm ci`, `npm run build`, `prisma migrate deploy`, seed,
+> `next start`), e cada passo do entrypoint foi verificado isoladamente — mas a
+> construção da imagem em si não foi executada, então trate a primeira build
+> como não testada.
+
+### Publicar com URL pública
+
+Aqui vale um aviso, porque o projeto mudou de natureza: **não dá para publicar
+na Vercel do jeito que está.** O banco é SQLite em arquivo e os documentos de
+KYC são gravados em disco; em ambiente serverless o sistema de arquivos é
+efêmero e some entre invocações.
+
+Para uma URL pública, dois caminhos:
+
+- **Host com disco persistente** (Railway, Render, Fly.io, ou qualquer VPS com
+  Docker): funciona como está, montando volume em `/app/data` e `/app/storage`.
+- **Vercel e afins**: exige trocar SQLite por PostgreSQL gerenciado (Neon,
+  Supabase) e o armazenamento local por object storage (S3, Vercel Blob). A
+  troca do banco é de uma linha no `schema.prisma` mais a variável de ambiente;
+  o armazenamento precisa de uma implementação nova atrás da mesma interface de
+  documentos. Posso fazer essa migração se você quiser publicar assim.
 
 ### Acessos criados pelo seed
 
@@ -49,6 +104,14 @@ npm run db:seed                       # restaurar o ambiente ao estado inicial
 
 Para PostgreSQL, troque `provider` em `prisma/schema.prisma` e aponte
 `DATABASE_URL`. O schema não usa nada específico de SQLite.
+
+### Um detalhe de túnel
+
+Server Actions recusam requisições cujo `Origin` não bate com o `Host`. Ao abrir
+o app por um túnel (Codespaces, Gitpod), o host encaminhado é diferente do host
+interno e todo formulário quebraria — por isso esses domínios estão em
+`experimental.serverActions.allowedOrigins`, no `next.config.ts`. Se você usar
+outro túnel (ngrok, Cloudflare Tunnel), acrescente o domínio ali.
 
 ---
 
