@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { requireUser } from "@/server/auth/guards";
-import { AVAILABLE_TERMS, MIN_AMOUNT_CENTS } from "@/server/credit/rates";
-import { quoteCredit } from "@/server/credit/schedule";
+import { MIN_AMOUNT_CENTS } from "@/server/credit/rates";
 import { formatBRL, formatBps } from "@/server/money";
 import { creditPosition } from "@/server/services/scoring";
 import { onboardingState } from "@/server/services/onboarding";
-import { Panel, SandboxNotice, StatTile } from "@/components/app/ui";
-import { ApplyForm, SimulatorForm } from "./forms";
+import { simulateAction } from "@/app/actions/credit";
+import { PageHeading, Panel, SandboxNotice, StatTile } from "@/components/app/ui";
+import { Simulator } from "./forms";
 
 /**
- * Simulador e contratação.
+ * Simulação e contratação.
  *
- * A simulação roda no servidor a partir dos parâmetros da URL: uma única
- * implementação da matemática financeira, igual à que gera o contrato, e a
- * página funciona mesmo sem JavaScript.
+ * A primeira simulação é renderizada no servidor para que a página já chegue
+ * com números na tela; a partir daí o componente cliente recalcula conforme o
+ * cliente mexe nos controles, sempre chamando de volta o mesmo cálculo.
  */
 export default async function CreditPage({
   searchParams,
@@ -22,38 +22,25 @@ export default async function CreditPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+
   const [position, onboarding] = await Promise.all([
     creditPosition(user.id),
     onboardingState(user.id),
   ]);
 
   const verified = onboarding.kycStatus === "APPROVED";
-  const ceiling = Math.max(position.limit.availableCents, MIN_AMOUNT_CENTS);
-  const askedCents =
+  const valorPadrao =
     Math.round(Number(params.valor ?? 0) * 100) ||
-    Math.min(position.limit.availableCents, 200_000);
-  const requestedCents = Math.max(MIN_AMOUNT_CENTS, Math.min(askedCents, ceiling));
-  // Simular acima do limite disponível só geraria uma recusa: a simulação é
-  // ajustada, mas o cliente precisa saber que isso aconteceu.
-  const clamped = askedCents > ceiling;
-  const termMonths = AVAILABLE_TERMS.includes(Number(params.prazo) as (typeof AVAILABLE_TERMS)[number])
-    ? Number(params.prazo)
-    : 12;
+    Math.min(Math.max(position.limit.availableCents, MIN_AMOUNT_CENTS), 200_000);
 
-  const quote = quoteCredit({
-    requestedCents,
-    termMonths,
-    monthlyRateBps: position.limit.monthlyRateBps,
+  const inicial = await simulateAction({
+    amountCents: valorPadrao,
+    termMonths: Number(params.prazo) || 12,
   });
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="eyebrow">Crédito</p>
-        <h1 className="font-display mt-2 text-3xl font-extrabold tracking-tight text-white uppercase">
-          Simule e contrate
-        </h1>
-      </div>
+      <PageHeading eyebrow="Crédito" title="Simule e contrate" />
 
       {!verified ? (
         <p className="alert alert-warning">
@@ -61,14 +48,14 @@ export default async function CreditPage({
           <Link href="/app/verificacao" className="underline">
             verificação de identidade
           </Link>{" "}
-          para contratar. A simulação abaixo já usa seu nível atual.
+          para contratar. A simulação abaixo já usa as condições do seu nível.
         </p>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatTile label="Limite disponível" value={formatBRL(position.limit.availableCents)} accent />
         <StatTile
-          label="Taxa do nível"
+          label="Taxa do seu nível"
           value={`${formatBps(position.limit.monthlyRateBps)} a.m.`}
           meta={`Nível ${position.score.level}`}
         />
@@ -79,75 +66,12 @@ export default async function CreditPage({
         />
       </div>
 
-      <Panel title="Simulador" description="Os valores abaixo são os mesmos que irão para o contrato.">
-        {clamped ? (
-          <p className="alert alert-warning mb-5">
-            Ajustamos a simulação para {formatBRL(ceiling)}, seu limite disponível hoje. Quitar
-            parcelas libera limite e aumenta seu score.
-          </p>
-        ) : null}
-        <SimulatorForm
-          defaultAmount={(requestedCents / 100).toFixed(2)}
-          defaultTerm={termMonths}
-          maxAmount={Math.max(position.limit.availableCents, MIN_AMOUNT_CENTS) / 100}
-          terms={[...AVAILABLE_TERMS]}
-        />
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile label="Parcela mensal" value={formatBRL(quote.installmentCents)} accent />
-          <StatTile label="Total a pagar" value={formatBRL(quote.totalPayableCents)} />
-          <StatTile label="IOF" value={formatBRL(quote.iofCents)} meta="Financiado no contrato" />
-          <StatTile
-            label="CET"
-            value={`${formatBps(quote.cetYearlyBps)} a.a.`}
-            meta={`${formatBps(quote.monthlyRateBps)} a.m. de juros`}
-          />
-        </div>
-
-        <details className="inset-box mt-5">
-          <summary className="cursor-pointer text-sm font-semibold text-white">
-            Ver as {quote.termMonths} parcelas
-          </summary>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[420px] text-left text-xs">
-              <thead>
-                <tr className="border-hairline border-b">
-                  <th scope="col" >Nº</th>
-                  <th scope="col" >Vencimento</th>
-                  <th scope="col" className="cell-right">Amortização</th>
-                  <th scope="col" className="cell-right">Juros</th>
-                  <th scope="col" className="cell-right">Parcela</th>
-                </tr>
-              </thead>
-              <tbody>
-                {quote.installments.map((installment) => (
-                  <tr key={installment.number} >
-                    <td className="cell-strong">{installment.number}</td>
-                    <td >
-                      {installment.dueDate.toLocaleDateString("pt-BR")}
-                    </td>
-                    <td className="cell-right">
-                      {formatBRL(installment.principalCents)}
-                    </td>
-                    <td className="cell-right">
-                      {formatBRL(installment.interestCents)}
-                    </td>
-                    <td className="cell-right cell-strong">
-                      {formatBRL(installment.totalCents)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </details>
+      <Panel
+        title="Simulador"
+        description="Mexa no valor e no prazo: os números mudam na hora, e são exatamente os que vão para o contrato."
+      >
+        <Simulator inicial={inicial} minimoCents={MIN_AMOUNT_CENTS} podeContratar={verified} />
       </Panel>
-
-      {verified ? (
-        <Panel title="Solicitar" description="A decisão é imediata quando todos os critérios da política são atendidos.">
-          <ApplyForm amount={(requestedCents / 100).toFixed(2)} term={termMonths} />
-        </Panel>
-      ) : null}
 
       <SandboxNotice>
         Ambiente de homologação: a liberação credita a Conta Valor interna e os pagamentos usam o

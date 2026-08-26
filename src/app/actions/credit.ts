@@ -6,7 +6,13 @@ import { redirect } from "next/navigation";
 import { requireActiveCustomer, requireUser } from "@/server/auth/guards";
 import { clientIp } from "@/server/auth/session";
 import { apply, signAndDisburse } from "@/server/services/credit";
-import { MIN_AMOUNT_CENTS } from "@/server/credit/rates";
+import { quoteCredit } from "@/server/credit/schedule";
+import { creditPosition } from "@/server/services/scoring";
+import {
+  AVAILABLE_TERMS,
+  MAX_INCOME_COMMITMENT,
+  MIN_AMOUNT_CENTS,
+} from "@/server/credit/rates";
 import { creditApplicationSchema, parseBrlToCents } from "@/server/validation";
 import { db } from "@/server/db";
 import type { ActionState } from "./auth";
@@ -90,4 +96,116 @@ export async function cancelApplicationAction(formData: FormData) {
     data: { status: "CANCELLED" },
   });
   revalidatePath("/app/contratos");
+}
+
+
+export type SimulacaoParcela = {
+  numero: number;
+  vencimento: string;
+  amortizacaoCents: number;
+  jurosCents: number;
+  totalCents: number;
+};
+
+export type Simulacao = {
+  solicitadoCents: number;
+  prazo: number;
+  parcelaCents: number;
+  totalCents: number;
+  jurosCents: number;
+  iofCents: number;
+  taxaMensalBps: number;
+  cetAnualBps: number;
+  primeiroVencimento: string;
+  /** Fatia da renda declarada comprometida pela parcela, de 0 a 1. */
+  comprometimento: number;
+  comprometimentoMaximo: number;
+  limiteDisponivelCents: number;
+  rendaCents: number;
+  /** Parcela de cada prazo disponível, para comparar o custo do tempo. */
+  porPrazo: { prazo: number; parcelaCents: number; totalCents: number }[];
+  parcelas: SimulacaoParcela[];
+  /** Impedimentos que já dá para ver antes de solicitar. */
+  avisos: string[];
+};
+
+/**
+ * Simulação sob demanda para o simulador ao vivo.
+ *
+ * Roda no servidor porque é lá que mora a matemática do contrato: uma segunda
+ * implementação no navegador acabaria divergindo da que gera o cronograma real,
+ * e preço divergente entre o que se promete e o que se assina é problema sério
+ * em crédito.
+ */
+export async function simulateAction(params: {
+  amountCents: number;
+  termMonths: number;
+}): Promise<Simulacao> {
+  const user = await requireUser();
+  const [posicao, kyc] = await Promise.all([
+    creditPosition(user.id),
+    db.kycProfile.findUnique({ where: { userId: user.id } }),
+  ]);
+
+  const teto = Math.max(posicao.limit.availableCents, MIN_AMOUNT_CENTS);
+  const solicitado = Math.min(Math.max(params.amountCents, MIN_AMOUNT_CENTS), teto);
+  const prazo = AVAILABLE_TERMS.includes(params.termMonths as (typeof AVAILABLE_TERMS)[number])
+    ? params.termMonths
+    : 12;
+
+  const taxa = posicao.limit.monthlyRateBps;
+  const cotacao = quoteCredit({ requestedCents: solicitado, termMonths: prazo, monthlyRateBps: taxa });
+
+  const renda = kyc?.monthlyIncomeCents ?? 0;
+  const comprometimento = renda > 0 ? cotacao.installmentCents / renda : 0;
+
+  const avisos: string[] = [];
+  if (params.amountCents > teto) {
+    avisos.push(
+      `Ajustamos para ${(teto / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}, seu limite disponível hoje.`,
+    );
+  }
+  if (comprometimento > MAX_INCOME_COMMITMENT) {
+    avisos.push(
+      `Esta parcela usa ${Math.round(comprometimento * 100)}% da sua renda declarada. A política permite até ${Math.round(MAX_INCOME_COMMITMENT * 100)}% — escolha um prazo maior ou um valor menor.`,
+    );
+  }
+
+  const formatarData = (data: Date) => data.toLocaleDateString("pt-BR");
+
+  return {
+    solicitadoCents: solicitado,
+    prazo,
+    parcelaCents: cotacao.installmentCents,
+    totalCents: cotacao.totalPayableCents,
+    jurosCents: cotacao.totalInterestCents,
+    iofCents: cotacao.iofCents,
+    taxaMensalBps: taxa,
+    cetAnualBps: cotacao.cetYearlyBps,
+    primeiroVencimento: formatarData(cotacao.firstDueDate),
+    comprometimento,
+    comprometimentoMaximo: MAX_INCOME_COMMITMENT,
+    limiteDisponivelCents: posicao.limit.availableCents,
+    rendaCents: renda,
+    porPrazo: AVAILABLE_TERMS.map((meses) => {
+      const alternativa = quoteCredit({
+        requestedCents: solicitado,
+        termMonths: meses,
+        monthlyRateBps: taxa,
+      });
+      return {
+        prazo: meses,
+        parcelaCents: alternativa.installmentCents,
+        totalCents: alternativa.totalPayableCents,
+      };
+    }),
+    parcelas: cotacao.installments.map((parcela) => ({
+      numero: parcela.number,
+      vencimento: formatarData(parcela.dueDate),
+      amortizacaoCents: parcela.principalCents,
+      jurosCents: parcela.interestCents,
+      totalCents: parcela.totalCents,
+    })),
+    avisos,
+  };
 }

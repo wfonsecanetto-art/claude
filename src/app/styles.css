@@ -90,6 +90,13 @@
     padding-block: 2rem;
   }
 
+  /* Item de grid nasce com min-width: auto e estica até caber o conteúdo. Sem
+     isto, a navegação lateral (uma fila de atalhos no celular) empurra a
+     página inteira para o lado em vez de rolar dentro da própria caixa. */
+  .app-body > * {
+    min-width: 0;
+  }
+
   @media (min-width: 1024px) {
     .app-body {
       grid-template-columns: 220px minmax(0, 1fr);
@@ -830,5 +837,322 @@
   .doc-chip:hover {
     border-color: color-mix(in srgb, var(--color-lime) 40%, transparent);
     color: var(--color-lime);
+  }
+}
+
+/* ==========================================================================
+   12. FAIXA HERO DA CONTA
+   ==========================================================================
+   Hierarquia de profundidade em três níveis: a faixa hero (raio 20px, vidro,
+   brilho ambiente) recebe painéis (16px), que recebem indicadores (12px). É o
+   que dá a sensação de camadas sem precisar de sombra pesada.
+   ========================================================================== */
+
+@layer components {
+  .hero-band {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid var(--color-hairline);
+    background:
+      radial-gradient(120% 140% at 12% 0%, rgba(183, 255, 0, 0.09), transparent 55%),
+      linear-gradient(160deg, rgba(26, 31, 30, 0.95), rgba(5, 5, 5, 0.95));
+    padding: 1.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .hero-band {
+      padding: 2.25rem;
+    }
+  }
+
+  /* Halo do fundo. Decorativo — fica fora da árvore de acessibilidade. */
+  .hero-band::after {
+    content: "";
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 46%;
+    aspect-ratio: 1;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(183, 255, 0, 0.16), transparent 65%);
+    filter: blur(46px);
+    pointer-events: none;
+  }
+
+  .hero-band > * {
+    position: relative;
+  }
+
+  .hero-greeting {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-gray-valor);
+  }
+
+  /* O saldo é a informação que o cliente vem buscar: recebe o maior corpo. */
+  .hero-balance {
+    font-family: var(--font-display);
+    margin-top: 0.5rem;
+    font-size: clamp(2.25rem, 6vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+
+  .hero-sub {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Card de vidro que se sobrepõe à faixa — o gesto que a referência usa. */
+  .glass-card {
+    border-radius: 16px;
+    border: 1px solid var(--color-hairline-strong);
+    background: rgba(9, 12, 12, 0.66);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    padding: 1.125rem;
+  }
+
+  /* ------------------------------------------------------------------
+     13. ATALHOS DE SERVIÇO
+  ------------------------------------------------------------------ */
+
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .service-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* Doze atalhos em quatro colunas fecham três linhas exatas. Cinco colunas
+     deixariam um atalho sozinho na última linha. */
+
+  .service-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    border-radius: 14px;
+    border: 1px solid var(--color-hairline);
+    background-color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+    padding: 0.9375rem;
+    text-align: left;
+    transition:
+      border-color 280ms var(--ease-valor),
+      transform 280ms var(--ease-valor),
+      background-color 280ms var(--ease-valor);
+  }
+
+  .service-tile:hover {
+    border-color: color-mix(in srgb, var(--color-lime) 35%, transparent);
+    background-color: color-mix(in srgb, var(--color-lime) 4%, transparent);
+    transform: translateY(-2px);
+  }
+
+  .service-icon {
+    display: inline-flex;
+    height: 2.25rem;
+    width: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    border: 1px solid color-mix(in srgb, var(--color-lime) 22%, transparent);
+    background-color: color-mix(in srgb, var(--color-lime) 10%, transparent);
+    color: var(--color-lime);
+  }
+
+  .service-name {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #fff;
+  }
+
+  .service-hint {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: var(--color-text-muted);
+  }
+
+  /* Serviço previsto mas ainda não construído. Fica visível e inerte: o
+     cliente vê o roteiro sem que a interface finja que já funciona. */
+  .service-tile--soon {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .service-tile--soon:hover {
+    border-color: var(--color-hairline);
+    background-color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+    transform: none;
+  }
+
+  .service-tile--soon .service-icon {
+    border-color: var(--color-hairline);
+    background-color: rgba(255, 255, 255, 0.04);
+    color: var(--color-gray-valor);
+  }
+
+  /* ------------------------------------------------------------------
+     14. SIMULADOR
+  ------------------------------------------------------------------ */
+
+  .sim-value {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 7vw, 3.75rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-lime);
+  }
+
+  .sim-value-sub {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Enquanto o servidor recalcula, o valor perde nitidez em vez de sumir:
+     o layout não salta e o cliente entende que o número está mudando. */
+  .sim-pending {
+    opacity: 0.45;
+    filter: blur(1.5px);
+    transition: opacity 200ms var(--ease-valor), filter 200ms var(--ease-valor);
+  }
+
+  .term-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .term-chip {
+    display: flex;
+    min-width: 5.25rem;
+    flex-direction: column;
+    gap: 0.125rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-hairline);
+    background-color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    transition:
+      border-color 240ms var(--ease-valor),
+      background-color 240ms var(--ease-valor);
+  }
+
+  .term-chip:hover {
+    border-color: var(--color-hairline-strong);
+  }
+
+  .term-chip[aria-pressed="true"] {
+    border-color: color-mix(in srgb, var(--color-lime) 55%, transparent);
+    background-color: color-mix(in srgb, var(--color-lime) 10%, transparent);
+  }
+
+  .term-chip-term {
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-gray-valor);
+  }
+
+  .term-chip[aria-pressed="true"] .term-chip-term {
+    color: var(--color-lime);
+  }
+
+  .term-chip-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+
+  /* Medidor de comprometimento de renda, com o teto da política marcado. */
+  .meter {
+    position: relative;
+    height: 0.5rem;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.07);
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-lime-deep), var(--color-lime));
+    transition: width 420ms var(--ease-valor);
+  }
+
+  .meter-fill--over {
+    background: linear-gradient(90deg, #b45309, #ef4444);
+  }
+
+  .meter-limit {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Composição do custo: principal, juros e IOF na mesma barra. */
+  .composition {
+    display: flex;
+    height: 0.625rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .composition span {
+    display: block;
+    height: 100%;
+    transition: width 420ms var(--ease-valor);
+  }
+
+  /* Três tons que se separam à primeira vista: o verde da marca para o que o
+     cliente recebe, um oliva escuro para o custo do dinheiro e cinza para o
+     tributo. Escala sequencial, não três cores concorrentes. */
+  .composition-principal { background-color: var(--color-lime); }
+  .composition-juros { background-color: #4d6b0f; }
+  .composition-iof { background-color: #6b7280; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+  }
+
+  .legend-dot {
+    height: 0.5rem;
+    width: 0.5rem;
+    border-radius: 3px;
   }
 }
