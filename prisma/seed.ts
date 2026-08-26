@@ -249,6 +249,74 @@ async function seedContract(params: {
   return contract;
 }
 
+
+/**
+ * Contrato aprovado e aguardando assinatura.
+ *
+ * Diferente de `seedContract`: não gera cronograma nem lançamentos, porque
+ * nada disso existe antes do aceite. É o estado que permite exercitar a
+ * assinatura e ver o dinheiro cair na conta.
+ */
+async function seedPendingContract(params: {
+  userId: string;
+  principalCents: number;
+  termMonths: number;
+  monthlyRateBps: number;
+}) {
+  const cotacao = quoteCredit({
+    requestedCents: params.principalCents,
+    termMonths: params.termMonths,
+    monthlyRateBps: params.monthlyRateBps,
+  });
+
+  const application = await db.creditApplication.create({
+    data: {
+      userId: params.userId,
+      amountCents: params.principalCents,
+      termMonths: params.termMonths,
+      purpose: "Reforma da loja",
+      status: "APPROVED",
+      decisionReason: "Todos os critérios da política de crédito foram atendidos.",
+      scoreAtDecision: 640,
+      monthlyRateBps: params.monthlyRateBps,
+      iofCents: cotacao.iofCents,
+      cetYearlyBps: cotacao.cetYearlyBps,
+      totalPayableCents: cotacao.totalPayableCents,
+      installmentCents: cotacao.installmentCents,
+      decidedAt: new Date(),
+    },
+  });
+
+  return db.contract.create({
+    data: {
+      number: `VLR-${new Date().getFullYear()}-${Math.floor(Math.random() * 900000 + 100000)}`,
+      applicationId: application.id,
+      userId: params.userId,
+      principalCents: params.principalCents,
+      iofCents: cotacao.iofCents,
+      monthlyRateBps: params.monthlyRateBps,
+      cetYearlyBps: cotacao.cetYearlyBps,
+      termMonths: params.termMonths,
+      totalPayableCents: cotacao.totalPayableCents,
+      status: "AWAITING_SIGNATURE",
+    },
+  });
+}
+
+/** Crédito avulso na carteira, para que a conta tenha saldo para pagar. */
+async function seedDeposit(userId: string, amountCents: number) {
+  const [carteira, caixa] = await Promise.all([wallet(userId), platformAccount("FUNDING")]);
+  await post({
+    kind: "DEPOSIT",
+    description: "Depósito via SANDBOX",
+    createdAt: monthsAgo(1),
+    entries: [
+      { accountId: caixa.id, direction: "DEBIT", amountCents },
+      { accountId: carteira.id, direction: "CREDIT", amountCents },
+    ],
+  });
+}
+
 async function main() {
   console.log("Limpando base…");
   await db.$transaction([
@@ -388,14 +456,104 @@ async function main() {
 
   // Recalcula os scores com o histórico já gravado.
   const { recalculateScore } = await import("../src/server/services/scoring");
+  const recalcular = (userId: string) => recalculateScore(userId, "Carga inicial");
   for (const user of [veteran, pending, analyst]) {
-    await recalculateScore(user.id, "Carga inicial");
+    await recalcular(user.id);
   }
 
-  console.log("\nAmbiente pronto. Acessos (senha: Valor@2026):");
-  console.log("  cliente@exemplo.com    — cliente com histórico e contrato ativo");
-  console.log("  pendente@exemplo.com   — cadastro aguardando verificação");
-  console.log("  analista@valor.com.br  — backoffice (fila de análise)");
+  /**
+   * Conta de exploração.
+   *
+   * Senha curta de propósito, para facilitar o acesso durante a avaliação do
+   * piloto — ela fica abaixo da política do próprio produto (dez caracteres,
+   * com maiúscula, minúscula e número), então não seria aceita pela tela de
+   * cadastro. Por isso a conta só nasce fora de produção: em produção, uma
+   * credencial fraca conhecida é porta aberta.
+   */
+  if (process.env.NODE_ENV === "production") {
+    console.log("\nNODE_ENV=production: conta de teste com senha fraca não foi criada.");
+  } else {
+    const teste = await db.user.create({
+      data: {
+        name: "Rafael Teste",
+        email: "teste@exemplo.com",
+        cpf: "16899535009",
+        phone: "11955551111",
+        passwordHash: await hashPassword("123"),
+        status: "ACTIVE",
+        createdAt: monthsAgo(14),
+      },
+    });
+    await wallet(teste.id);
+    await db.kycProfile.create({
+      data: {
+        userId: teste.id,
+        birthDate: new Date("1988-09-12"),
+        motherName: "Regina Teste",
+        occupation: "Comerciante",
+        monthlyIncomeCents: 650_000,
+        zipCode: "30140071",
+        street: "Avenida Afonso Pena",
+        number: "500",
+        district: "Centro",
+        city: "Belo Horizonte",
+        state: "MG",
+        status: "APPROVED",
+        submittedAt: monthsAgo(14),
+        reviewedAt: monthsAgo(14),
+        reviewedById: analyst.id,
+      },
+    });
+    await createDocuments(teste.id);
+    await db.document.updateMany({ where: { userId: teste.id }, data: { status: "APPROVED" } });
+    await db.personalReference.createMany({
+      data: [
+        { userId: teste.id, name: "Beatriz Teste", phone: "11944442222", relationship: "Irmã" },
+        { userId: teste.id, name: "Otávio Prado", phone: "11933331111", relationship: "Sócio" },
+      ],
+    });
+
+    // Histórico encerrado, para o cashback já aparecer na conta.
+    await seedContract({
+      userId: teste.id,
+      principalCents: 180_000,
+      termMonths: 12,
+      monthlyRateBps: LEVEL_POLICY.Prata.monthlyRateBps,
+      startedMonthsAgo: 13,
+      paidInstallments: 12,
+      settle: true,
+    });
+
+    // Contrato na última parcela: pagar aqui dispara quitação, cashback e
+    // recálculo de score na hora — o ciclo inteiro em um clique.
+    await seedContract({
+      userId: teste.id,
+      principalCents: 240_000,
+      termMonths: 12,
+      monthlyRateBps: LEVEL_POLICY.Ouro.monthlyRateBps,
+      startedMonthsAgo: 11,
+      paidInstallments: 11,
+      settle: false,
+    });
+
+    // Proposta aprovada esperando aceite: exercita assinatura e liberação.
+    await seedPendingContract({
+      userId: teste.id,
+      principalCents: 200_000,
+      termMonths: 12,
+      monthlyRateBps: LEVEL_POLICY.Ouro.monthlyRateBps,
+    });
+
+    await seedDeposit(teste.id, 300_000);
+    await recalcular(teste.id);
+  }
+
+
+  console.log("\nAmbiente pronto.\n");
+  console.log("  teste@exemplo.com      senha 123          conta de exploração");
+  console.log("  cliente@exemplo.com    senha Valor@2026   histórico e contrato ativo");
+  console.log("  pendente@exemplo.com   senha Valor@2026   cadastro aguardando verificação");
+  console.log("  analista@valor.com.br  senha Valor@2026   backoffice (fila de análise)");
 }
 
 main()

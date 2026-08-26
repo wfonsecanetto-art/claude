@@ -103,13 +103,26 @@ Para uma URL pública, dois caminhos:
 
 ### Acessos criados pelo seed
 
-Senha para todos: `Valor@2026`
-
-| Usuário | Papel | Estado |
+| Usuário | Senha | Estado |
 | --- | --- | --- |
-| `cliente@exemplo.com` | Cliente | 20 meses de conta, 1 contrato quitado, 1 ativo, score Ouro |
-| `pendente@exemplo.com` | Cliente | Cadastro enviado, aguardando análise |
-| `analista@valor.com.br` | Analista | Acessa `/backoffice` |
+| `teste@exemplo.com` | `123` | **Conta de exploração** — contrato aguardando assinatura, contrato na última parcela, contrato quitado com cashback e saldo em conta |
+| `cliente@exemplo.com` | `Valor@2026` | 20 meses de conta, 1 contrato quitado, 1 ativo, score Ouro |
+| `pendente@exemplo.com` | `Valor@2026` | Cadastro enviado, aguardando análise — mostra o app com o crédito bloqueado |
+| `analista@valor.com.br` | `Valor@2026` | Analista, acessa `/backoffice` |
+
+A conta de teste existe para encurtar o acesso durante a avaliação e leva
+estados que as outras não têm, para exercitar o ciclo inteiro:
+
+- **assinar** o contrato aprovado e ver o valor cair na Conta Valor;
+- **pagar a última parcela** de um contrato e ver, no mesmo clique, a quitação,
+  o cashback creditado e o score subir de nível;
+- saldo suficiente para pagar com a carteira, transferir e depositar.
+
+> A senha `123` fica **abaixo da política do próprio produto** (dez caracteres,
+> com maiúscula, minúscula e número) e por isso não seria aceita pela tela de
+> cadastro — só nasce pela carga inicial. O seed recusa criá-la quando
+> `NODE_ENV=production`: em produção, uma credencial fraca e conhecida é porta
+> aberta. Se for publicar em qualquer ambiente acessível, remova esta conta.
 
 ### Outros comandos
 
