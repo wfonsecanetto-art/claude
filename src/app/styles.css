@@ -39,27 +39,7 @@
     }
   }
 
-  /* Trilhos full-bleed alinhados ao container editorial.
-     O scroll-padding acompanha o padding: sem ele, o snap arrasta o trilho
-     para encostar o primeiro card na borda da tela. */
-  .rail-inset {
-    padding-inline: max(1.25rem, calc((100% - 84rem) / 2 + 1.25rem));
-    scroll-padding-inline: max(1.25rem, calc((100% - 84rem) / 2 + 1.25rem));
-  }
 
-  @media (min-width: 768px) {
-    .rail-inset {
-      padding-inline: max(2.5rem, calc((100% - 84rem) / 2 + 2.5rem));
-      scroll-padding-inline: max(2.5rem, calc((100% - 84rem) / 2 + 2.5rem));
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .rail-inset {
-      padding-inline: max(3.5rem, calc((100% - 84rem) / 2 + 3.5rem));
-      scroll-padding-inline: max(3.5rem, calc((100% - 84rem) / 2 + 3.5rem));
-    }
-  }
 
   /* Casca da área logada: cabeçalho fixo, coluna de navegação e conteúdo. */
   .app-shell {
@@ -124,22 +104,8 @@
     color: var(--color-gray-valor);
   }
 
-  .eyebrow-xs {
-    font-size: 0.5625rem;
-    letter-spacing: 0.2em;
-  }
 
-  .eyebrow-on {
-    color: #ffffff;
-  }
 
-  .display {
-    font-family: var(--font-display);
-    font-weight: 800;
-    line-height: 0.92;
-    letter-spacing: -0.045em;
-    text-transform: uppercase;
-  }
 
   /* Título de página da área logada. */
   .page-title {
@@ -171,32 +137,8 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .rule-lime {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--color-lime) 35%,
-      var(--color-lime) 65%,
-      transparent
-    );
-  }
 
-  /* ------------------------------------------------------------------
-     3. SUPERFÍCIES
-  ------------------------------------------------------------------ */
 
-  .surface-card {
-    background: linear-gradient(160deg, rgba(23, 27, 27, 0.9), rgba(5, 5, 5, 0.9));
-    border: 1px solid var(--color-hairline);
-  }
-
-  /* Vidro discreto — header do site e cards sobrepostos. */
-  .glass {
-    background-color: rgba(16, 19, 19, 0.72);
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
-    border: 1px solid var(--color-hairline);
-  }
 
   /* Bloco padrão da área logada. */
   .panel {
@@ -748,36 +690,9 @@
     color: var(--color-lime);
   }
 
-  /* Item do menu do site institucional, com sublinhado que cresce. */
-  .site-nav-link {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    padding: 0.5rem 0.875rem;
-    font-size: 0.875rem;
-    color: var(--color-gray-valor);
-    transition: color 300ms var(--ease-valor);
-  }
 
-  .site-nav-link:hover {
-    color: #ffffff;
-  }
 
-  .site-nav-link::after {
-    content: "";
-    position: absolute;
-    inset-inline: 0.875rem;
-    bottom: 0.25rem;
-    height: 1px;
-    background-color: var(--color-lime);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 500ms var(--ease-valor);
-  }
 
-  .site-nav-link:hover::after {
-    transform: scaleX(1);
-  }
 
   /* Selo de seção do backoffice. */
   .badge-lime {
@@ -911,15 +826,6 @@
     color: var(--color-text-muted);
   }
 
-  /* Card de vidro que se sobrepõe à faixa — o gesto que a referência usa. */
-  .glass-card {
-    border-radius: 16px;
-    border: 1px solid var(--color-hairline-strong);
-    background: rgba(9, 12, 12, 0.66);
-    backdrop-filter: blur(14px) saturate(150%);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
-    padding: 1.125rem;
-  }
 
   /* ------------------------------------------------------------------
      13. ATALHOS DE SERVIÇO

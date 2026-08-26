@@ -2,7 +2,7 @@
   "name": "banco-valor-digital",
   "version": "0.1.0",
   "private": true,
-  "description": "Projeto piloto do website institucional e plataforma digital do Banco Valor Digital.",
+  "description": "Piloto do aplicativo do Banco Valor Digital.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "@react-three/fiber": "9.7.0",
     "bcryptjs": "^3.0.3",
     "framer-motion": "12.43.0",
     "jose": "^6.2.10",
@@ -30,7 +29,6 @@
     "qrcode": "^1.5.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "three": "0.185.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -40,7 +38,6 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.1",
-    "@types/three": "0.185.0",
     "eslint": "9.39.1",
     "eslint-config-next": "15.5.23",
     "tailwindcss": "4.3.3",

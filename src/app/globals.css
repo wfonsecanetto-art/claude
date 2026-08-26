@@ -111,33 +111,6 @@
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .glow-lime {
-    box-shadow: var(--shadow-glow-md);
-  }
-
-  .text-glow-lime {
-    text-shadow: 0 0 34px rgba(183, 255, 0, 0.35);
-  }
-
-  /* Grão sutil sobre fundos escuros: evita banding em gradientes grandes. */
-  .grain::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.5;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E");
-  }
-
-  .mask-fade-b {
-    mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
-  }
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -145,87 +118,6 @@
   .no-scrollbar {
     scrollbar-width: none;
   }
-}
-
-/* ==========================================================================
-   Animações contínuas
-   Só transform e opacity — nada que provoque recálculo de layout.
-   ========================================================================== */
-
-@keyframes valor-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes valor-spin-reverse {
-  from {
-    transform: rotate(360deg);
-  }
-  to {
-    transform: rotate(0deg);
-  }
-}
-
-@keyframes valor-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
-}
-
-@keyframes valor-pulse-glow {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-@keyframes valor-marquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-.valor-orbit-slow {
-  animation: valor-spin 42s linear infinite;
-}
-
-.valor-orbit-reverse {
-  animation: valor-spin-reverse 68s linear infinite;
-}
-
-.valor-float {
-  animation: valor-float 7s var(--ease-out-soft) infinite;
-}
-
-.valor-glow-pulse {
-  animation: valor-pulse-glow 6s ease-in-out infinite;
-}
-
-.valor-marquee {
-  animation: valor-marquee 38s linear infinite;
-}
-
-/* Ciclo Valor: o anel gira, os rótulos permanecem legíveis. */
-.valor-cycle-spin {
-  animation: valor-spin 72s linear infinite;
-}
-
-.valor-cycle-counter {
-  animation: valor-spin-reverse 72s linear infinite;
 }
 
 /* Movimento é enfeite; leitura não é. Quem pede menos movimento, recebe menos. */
@@ -241,14 +133,5 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
-  }
-
-  .valor-cycle-spin,
-  .valor-cycle-counter,
-  .valor-orbit-slow,
-  .valor-orbit-reverse,
-  .valor-float,
-  .valor-marquee {
-    animation: none !important;
   }
 }

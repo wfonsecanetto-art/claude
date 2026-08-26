@@ -1,8 +1,11 @@
 # BANCO VALOR DIGITAL
 
-Plataforma financeira digital: site institucional, aplicativo do cliente e
-backoffice de análise, com back-end, banco de dados, razão contábil de dupla
-entrada e motor de crédito próprio.
+Piloto do aplicativo do banco: conta do cliente e backoffice de análise, com
+back-end, banco de dados, razão contábil de dupla entrada e motor de crédito
+próprio.
+
+Não há site institucional — o produto é o aplicativo. A raiz (`/`) leva direto
+para a conta de quem tem sessão, ou para o acesso.
 
 > **Sobre o estágio do projeto.** O sistema funciona de ponta a ponta: cadastro,
 > verificação, análise de crédito, contrato, liberação, pagamento, cashback e
@@ -149,8 +152,6 @@ outro túnel (ngrok, Cloudflare Tunnel), acrescente o domínio ali.
 
 ## O que o sistema faz
 
-**Site institucional** (`/`) — apresenta o produto e leva ao cadastro.
-
 **Aplicativo do cliente** (`/app`)
 
 | Tela | O que faz |
@@ -278,14 +279,14 @@ src/server/
   audit.ts  ratelimit.ts  validation.ts
 
 src/app/
-  page.tsx                 Site institucional
+  page.tsx                 Raiz: encaminha para a conta ou para o acesso
   entrar/  criar-conta/    Autenticação e segundo fator
   app/                     Aplicativo do cliente
   backoffice/              Esteira de análise
   actions/                 Server actions (mutações)
   api/documentos/[id]/     Entrega autenticada de documento privado
 
-src/components/            Seções do site, primitivas do app, objeto 3D
+src/components/            Primitivas da interface e casca da conta
 
 src/app/globals.css        Tokens, reset e animações
 src/app/styles.css         Classes de componente do sistema visual
@@ -300,8 +301,9 @@ matemática, e a página funciona sem JavaScript.
 ## Design
 
 Verde-limão `#B7FF00` sobre preto `#050505`, Manrope nos títulos e Inter no
-texto. O contraste entre título gigante e microtexto técnico é o que dá a
-linguagem editorial.
+texto. A hierarquia de profundidade tem três níveis de arredondamento — faixa
+hero (20px), painel (16px), indicador (12px) — que criam camadas sem sombra
+pesada.
 
 ### Onde mexer no visual
 
@@ -334,11 +336,6 @@ Duas decisões que valem registro: o estado ativo da navegação é lido do
 tela e leitor de tela partem da mesma fonte de verdade; e existe um token
 `--color-text-muted` um degrau mais claro que o cinza da marca, porque abaixo de
 12px `#a5a5a5` sobre preto cansa a leitura.
-
-O objeto 3D do hero (React Three Fiber) é carregado sob demanda e só em tela
-grande com ponteiro fino e WebGL disponível; nos demais casos entra uma
-composição SVG equivalente. O ambiente do metal é gerado em canvas e passado
-pelo `PMREMGenerator` — reflexo real sem HDRI e sem requisição de rede.
 
 Movimento entre 400ms e 1000ms, só `transform`/`opacity`/`filter`, com
 `MotionConfig reducedMotion="user"`.
