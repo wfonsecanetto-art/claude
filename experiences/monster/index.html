@@ -62,7 +62,7 @@ body.no-webgl .stage,body.no-webgl .intro{display:none}
   pointer-events:none;
 }
 .brand{display:flex; align-items:center; gap:10px}
-.brand svg{width:22px; height:26px; display:block}
+.brand svg{width:20px; height:26px; display:block; color:var(--accent); transition:color .6s var(--ease)}
 .brand .wm{
   font-weight:900; font-stretch:112%; letter-spacing:.16em; font-size:13px;
   text-transform:uppercase; color:var(--ink);
@@ -302,22 +302,37 @@ var IS_TOUCH = window.matchMedia && window.matchMedia("(hover: none)").matches;
 
 /* ---------- 1. sabores ------------------------------------------ */
 var FLAVORS = [
-  { id:"original", name:"Original", line:"Monster Energy",
-    accent:"#9FE80A", liquid:"#74C40E", base:"#0A0C0A", claw:"#9FE80A", ink:"#FFFFFF", dark:true,
+  { id:"original", name:"Original", line:"Monster Energy", lock:"energy", sub:"",
+    accent:"#A2E80B", liquid:"#74C40E", dark:true,
+    base:["#131714","#040605"], ink:"#FFFFFF",
+    claw:["#DCF46F","#8FD117","#46930D"], clawOut:"#000000",
     caption:"A garra abre a superfície. O verde é o primeiro a atravessar o vidro." },
-  { id:"mango", name:"Mango Loco", line:"Juice Monster",
-    accent:"#F5A21A", liquid:"#E07C0A", base:"#EFA01C", claw:"#151008", ink:"#151008", dark:false,
+  { id:"mango", name:"Mango Loco", line:"Juice Monster", lock:"juice", sub:"ENERGY + JUICE",
+    accent:"#F5A21A", liquid:"#E07C0A", dark:false,
+    base:["#FFC72B","#E2620A"], ink:"#1B1004",
+    claw:["#241705","#120B02","#070401"], clawOut:"#FFD98A",
     caption:"O líquido sobe âmbar e repinta a lata de baixo para cima, na linha d'água." },
-  { id:"punch", name:"Pipeline Punch", line:"Juice Monster",
-    accent:"#FF6A5E", liquid:"#F04A3C", base:"#FF7060", claw:"#15232B", ink:"#15232B", dark:false,
+  { id:"punch", name:"Pipeline Punch", line:"Juice Monster", lock:"juice", sub:"ENERGY + JUICE",
+    accent:"#FF6A5E", liquid:"#F04A3C", dark:false,
+    base:["#FF9A79","#EE3F6B"], ink:"#1C2E38",
+    claw:["#FFFFFF","#FFF1EA","#FFD2C4"], clawOut:"#1C2E38",
     caption:"No ponto mais fundo do mergulho, o coral toma a cena inteira." },
-  { id:"violet", name:"Ultra Violet", line:"Monster Ultra",
-    accent:"#A882FF", liquid:"#7B54E6", base:"#16112A", claw:"#B394FF", ink:"#EFE8FF", dark:true,
+  { id:"violet", name:"Ultra Violet", line:"Monster Ultra", lock:"ultra", sub:"SEM AÇÚCARES",
+    accent:"#A882FF", liquid:"#7B54E6", dark:false,
+    base:["#A585FF","#5426C8"], ink:"#FFFFFF",
+    claw:["#FFFFFF","#F3EDFF","#D6C6FF"], clawOut:"#190E38",
     caption:"A luz esfria. O violeta contamina as bordas da página antes do produto." },
-  { id:"white", name:"Ultra White", line:"Monster Ultra",
-    accent:"#CFE2EE", liquid:"#A8C8DC", base:"#ECF1F4", claw:"#8FA6B4", ink:"#18202A", dark:false,
+  { id:"white", name:"Ultra White", line:"Monster Ultra", lock:"ultra", sub:"SEM AÇÚCARES",
+    accent:"#CFE2EE", liquid:"#A8C8DC", dark:false,
+    base:["#FFFFFF","#D6E0E7"], ink:"#1E262E",
+    claw:["#F2F6F9","#C8D4DC","#93A5B1"], clawOut:"#2A343C",
     caption:"Tudo drena. Resta o branco — e a sequência inteira volta para a superfície." }
 ];
+/* Artes oficiais: informe aqui a arte plana do rótulo (wrap 2048x1024) e/ou o
+   PNG do logo; elas substituem o desenho procedural. Use data URI ou arquivo
+   servido junto da página — a imagem precisa ser same-origin/CORS para virar
+   textura WebGL. Ex.: ASSETS.label.original = "latas/original.png"; */
+var ASSETS = { logo:null, label:{} };
 var N = FLAVORS.length;
 var FINALE = {
   name:"Cinco sabores",
@@ -334,54 +349,106 @@ function easeOut(t){ return 1-Math.pow(1-t,3); }
 function hexToRgb(h){ var n=parseInt(h.slice(1),16); return [((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255]; }
 function rnd(seed){ var s=seed; return function(){ s=(s*16807)%2147483647; return (s-1)/2147483646; }; }
 
-/* ---------- 2. a garra ------------------------------------------
-   Um risco: espinha levemente curva, mais largo a 38% do topo,
-   terminando em duas pontas. Serve para o canvas 2D e para SVG. -- */
-function gash(sink, x0,y0, x1,y1, w, bulge){
-  var dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy) || 1;
-  var nx=-dy/len, ny=dx/len;
-  var mx=(x0+x1)/2 + nx*bulge, my=(y0+y1)/2 + ny*bulge;
-  var px=x0 + dx*0.36 + nx*bulge*0.85, py=y0 + dy*0.36 + ny*bulge*0.85;
-  sink.moveTo(x0,y0);
-  sink.quadraticCurveTo(px+nx*w*1.02, py+ny*w*1.02, mx+nx*w*0.66, my+ny*w*0.66);
-  sink.quadraticCurveTo(x1+nx*w*0.22, y1+ny*w*0.22, x1,y1);
-  sink.quadraticCurveTo(mx-nx*w*0.30, my-ny*w*0.30, px-nx*w*0.42, py-ny*w*0.42);
-  sink.quadraticCurveTo(x0-nx*w*0.18, y0-ny*w*0.18, x0,y0);
-}
-/* três riscos: o do meio mais longo, splay para fora */
-var CLAW = [
-  { x0:0.150, y0:0.040, x1:0.292, y1:0.960, w:0.088, b:-0.055 },
-  { x0:0.470, y0:0.000, x1:0.540, y1:1.000, w:0.098, b:-0.010 },
-  { x0:0.812, y0:0.055, x1:0.740, y1:0.950, w:0.086, b: 0.050 }
+/* ---------- 2. a garra e o lockup ------------------------------
+   Três rasgos: topo largo e irregular, bordas serrilhadas, ponta
+   afiada embaixo e contorno preto grosso, como na marca. A mesma
+   geometria alimenta o canvas e o SVG do cabeçalho. -------------- */
+var GASH=[
+  { tl:0.000, tr:0.258, ty:0.075, tip:0.300, by:0.955, bow:-0.048, seed:17 },
+  { tl:0.300, tr:0.565, ty:0.000, tip:0.556, by:1.000, bow:-0.016, seed:43 },
+  { tl:0.615, tr:0.880, ty:0.045, tip:0.778, by:0.970, bow: 0.044, seed:71 }
 ];
-function drawClaw(ctx, x, y, w, h, color){
-  ctx.save(); ctx.translate(x,y); ctx.fillStyle=color;
-  ctx.beginPath();
-  for(var i=0;i<CLAW.length;i++){ var g=CLAW[i];
-    gash(ctx, g.x0*w, g.y0*h, g.x1*w, g.y1*h, g.w*w, g.b*w);
+function clawShape(sink,w,h){
+  var STEPS=13, g,i,k;
+  for(g=0;g<GASH.length;g++){
+    var G=GASH[g], r=rnd(G.seed);
+    var cx0=(G.tl+G.tr)/2, W0=(G.tr-G.tl)/2;
+    var R=[], L=[], t, cx, hw, y, amp, a, b;
+    for(i=0;i<=STEPS;i++){
+      t=i/STEPS;
+      cx=lerp(cx0,G.tip,t*t*0.62+t*0.38)+G.bow*Math.sin(Math.PI*t);
+      hw=W0*Math.pow(1-t,0.92);
+      y=lerp(G.ty,G.by,t);
+      amp=hw*0.34+W0*0.045;
+      a=(r()-0.5); b=(r()-0.5);
+      R.push([(cx+hw+a*amp)*w,(y+b*0.010)*h]);
+      L.push([(cx-hw+b*amp)*w,(y+a*0.010)*h]);
+    }
+    sink.moveTo(L[0][0],L[0][1]);
+    for(k=1;k<=4;k++){                       /* topo rasgado */
+      var f=k/4;
+      sink.lineTo(lerp(L[0][0],R[0][0],f),
+                  lerp(L[0][1],R[0][1],f)+(k%2?-1:1)*h*0.020*(r()+0.35));
+    }
+    for(i=1;i<R.length;i++) sink.lineTo(R[i][0],R[i][1]);
+    for(i=L.length-2;i>=0;i--) sink.lineTo(L[i][0],L[i][1]);
+    sink.closePath();
   }
-  ctx.fill("nonzero");
+}
+function drawClaw(ctx,x,y,w,h,opt){
+  ctx.save(); ctx.translate(x,y);
+  ctx.beginPath(); clawShape(ctx,w,h);
+  if(opt.outline){
+    ctx.lineJoin="round"; ctx.lineCap="round";
+    ctx.strokeStyle=opt.outline; ctx.lineWidth=h*(opt.outlineW||0.032); ctx.stroke();
+  }
+  var f=opt.fill;
+  if(f && f.length && typeof f!=="string"){
+    var gr=ctx.createLinearGradient(w*0.15,0,w*0.42,h);
+    gr.addColorStop(0,f[0]); gr.addColorStop(0.44,f[1]); gr.addColorStop(1,f[2]);
+    ctx.fillStyle=gr;
+  } else ctx.fillStyle=f;
+  ctx.fill();
   ctx.restore();
 }
 function clawSvgPath(w,h){
-  var d=""; var sink={
-    moveTo:function(a,b){ d+="M"+a.toFixed(2)+" "+b.toFixed(2); },
-    quadraticCurveTo:function(a,b,c,e){ d+="Q"+a.toFixed(2)+" "+b.toFixed(2)+" "+c.toFixed(2)+" "+e.toFixed(2); }
+  var d="", sink={
+    moveTo:function(a,b){ d+="M"+a.toFixed(1)+" "+b.toFixed(1); },
+    lineTo:function(a,b){ d+="L"+a.toFixed(1)+" "+b.toFixed(1); },
+    closePath:function(){ d+="Z"; }
   };
-  for(var i=0;i<CLAW.length;i++){ var g=CLAW[i];
-    gash(sink, g.x0*w, g.y0*h, g.x1*w, g.y1*h, g.w*w, g.b*w); d+="Z";
-  }
-  return d;
+  clawShape(sink,w,h); return d;
 }
 
-/* texto com tracking manual (canvas não tem letter-spacing confiável) */
-function tracked(ctx, text, x, y, track, align){
+/* texto com tracking manual; opcionalmente contornado como no wordmark */
+function tracked(ctx, text, x, y, track, align, stroke){
   var chars=text.split(""), i, total=0, ws=[];
   for(i=0;i<chars.length;i++){ ws[i]=ctx.measureText(chars[i]).width; total+=ws[i]+track; }
   total-=track;
   var cx = align==="center" ? x-total/2 : (align==="right" ? x-total : x);
-  for(i=0;i<chars.length;i++){ ctx.fillText(chars[i], cx, y); cx+=ws[i]+track; }
+  for(i=0;i<chars.length;i++){
+    if(stroke) ctx.strokeText(chars[i],cx,y);
+    ctx.fillText(chars[i],cx,y);
+    cx+=ws[i]+track;
+  }
   return total;
+}
+
+/* lockup da marca: MONSTER contornado + a linha do produto */
+function drawLockup(ctx,cx,y,size,kind,ink,outline,sub){
+  ctx.save();
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  ctx.lineJoin="round"; ctx.miterLimit=2;
+  if(kind==="juice"){
+    ctx.font='900 '+Math.round(size*0.46)+'px Archivo, sans-serif';
+    ctx.fillStyle=ink; ctx.strokeStyle=outline; ctx.lineWidth=size*0.055;
+    tracked(ctx,"JUICE",cx,y-size*0.74,size*0.030,"center",true);
+  }
+  ctx.font='900 '+Math.round(size)+'px Archivo, sans-serif';
+  ctx.strokeStyle=outline; ctx.lineWidth=size*0.135; ctx.fillStyle=ink;
+  tracked(ctx,"MONSTER",cx,y,-size*0.045,"center",true);
+  var lbl = kind==="ultra" ? "ULTRA" : (kind==="juice" ? "" : "ENERGY");
+  if(lbl){
+    ctx.font='900 '+Math.round(size*0.30)+'px Archivo, sans-serif';
+    ctx.lineWidth=size*0.055;
+    tracked(ctx,lbl,cx,y+size*0.40,size*0.20,"center",true);
+  }
+  if(sub){
+    ctx.font='500 '+Math.round(size*0.145)+'px "IBM Plex Mono", monospace';
+    ctx.lineWidth=size*0.03; ctx.globalAlpha=.92;
+    tracked(ctx,sub,cx,y+size*(lbl?0.68:0.34),size*0.10,"center",true);
+  }
+  ctx.restore();
 }
 
 /* ---------- 3. texturas da lata --------------------------------- */
@@ -416,67 +483,82 @@ function makeLabel(f, prof, W, H){
   var c=cv.getContext("2d");
   var yTop=(1-prof.vEnd)*H, yBot=(1-prof.vStart)*H;   /* v cresce para cima */
   var bh=yBot-yTop;
+  /* o wrap comprime o eixo vertical: tudo que é desenhado precisa ser
+     esticado em x por este fator para sair redondo na lata */
+  var AR=(W/(2*Math.PI*prof.rmax))/(H/prof.arc);
 
-  /* alumínio nas pontas */
+  /* alumínio exposto no fundo e no ombro */
   var g=c.createLinearGradient(0,0,W,0);
   g.addColorStop(0,"#8E969C"); g.addColorStop(.18,"#D6DCE0"); g.addColorStop(.33,"#9AA2A8");
   g.addColorStop(.55,"#E2E7EA"); g.addColorStop(.74,"#8A9299"); g.addColorStop(.9,"#C9D0D5"); g.addColorStop(1,"#8E969C");
   c.fillStyle=g; c.fillRect(0,0,W,H);
   brushed(c,0,0,W,H,7,0.28);
 
-  /* corpo impresso */
-  c.fillStyle=f.base; c.fillRect(0,yTop,W,bh);
-  /* leve modelagem de impressão + granulado */
-  var gg=c.createLinearGradient(0,yTop,0,yBot);
-  gg.addColorStop(0, f.dark?"rgba(255,255,255,.07)":"rgba(255,255,255,.14)");
-  gg.addColorStop(.35,"rgba(0,0,0,0)");
-  gg.addColorStop(1, f.dark?"rgba(0,0,0,.35)":"rgba(0,0,0,.22)");
-  c.fillStyle=gg; c.fillRect(0,yTop,W,bh);
+  /* arte oficial, quando fornecida em ASSETS.label[id] */
+  var art=ASSETS.label[f.id];
+  if(art && art.width){
+    c.drawImage(art,0,yTop,W,bh);
+  }else{
+    /* corpo impresso: gradiente do sabor */
+    var gb=c.createLinearGradient(0,yTop,W*0.35,yBot);
+    gb.addColorStop(0,f.base[0]); gb.addColorStop(1,f.base[1]);
+    c.fillStyle=gb; c.fillRect(0,yTop,W,bh);
 
-  /* faixa não impressa junto às bordas (como na lata real) */
-  c.fillStyle="rgba(190,198,204,.85)"; c.fillRect(0,yBot-H*0.012,W,H*0.012);
-  c.fillStyle="rgba(190,198,204,.65)"; c.fillRect(0,yTop,W,H*0.008);
+    /* modelagem da impressão sobre o metal */
+    var gg=c.createLinearGradient(0,yTop,0,yBot);
+    gg.addColorStop(0, f.dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.18)");
+    gg.addColorStop(.35,"rgba(0,0,0,0)");
+    gg.addColorStop(1, f.dark?"rgba(0,0,0,.35)":"rgba(0,0,0,.26)");
+    c.fillStyle=gg; c.fillRect(0,yTop,W,bh);
 
-  /* halo suave atrás da garra */
-  var cxA=W*0.27, cyA=yTop+bh*0.42;
-  var rg=c.createRadialGradient(cxA,cyA,bh*0.05,cxA,cyA,bh*0.62);
-  rg.addColorStop(0, f.dark?"rgba(255,255,255,.10)":"rgba(255,255,255,.28)");
-  rg.addColorStop(1,"rgba(255,255,255,0)");
-  c.fillStyle=rg; c.fillRect(0,yTop,W,bh);
+    /* faixas não impressas junto às bordas, como na lata real */
+    c.fillStyle="rgba(190,198,204,.85)"; c.fillRect(0,yBot-H*0.012,W,H*0.012);
+    c.fillStyle="rgba(190,198,204,.65)"; c.fillRect(0,yTop,W,H*0.008);
 
-  /* garra */
-  var ch=bh*0.66, cw=ch*0.82;
-  c.save();
-  c.shadowColor = f.dark?"rgba(0,0,0,.7)":"rgba(0,0,0,.28)"; c.shadowBlur=W*0.006; c.shadowOffsetY=H*0.004;
-  drawClaw(c, cxA-cw/2, cyA-ch*0.52, cw, ch, f.claw);
-  c.restore();
+    /* ---- face frontal: garra, lockup e nome do sabor ---- */
+    var cxA=W*0.27;
+    var chH=bh*0.50, cwU=chH*0.72;
+    var clawY=yTop+bh*0.065;
 
-  /* marca vertical no lado oposto */
-  c.save();
-  c.translate(W*0.735, yTop+bh*0.5); c.rotate(-Math.PI/2);
-  c.fillStyle=f.ink; c.textBaseline="middle";
-  c.font='900 '+Math.round(bh*0.20)+'px Archivo, sans-serif';
-  tracked(c,"MONSTER",0,-bh*0.10,-bh*0.006,"center");
-  c.globalAlpha=.85;
-  c.font='500 '+Math.round(bh*0.062)+'px "IBM Plex Mono", monospace';
-  tracked(c,"ENERGY",0,bh*0.055,bh*0.052,"center");
-  c.restore();
+    var rg=c.createRadialGradient(cxA,clawY+chH*0.5,bh*0.05,cxA,clawY+chH*0.5,bh*0.85);
+    rg.addColorStop(0, f.dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.28)");
+    rg.addColorStop(1,"rgba(255,255,255,0)");
+    c.fillStyle=rg; c.fillRect(0,yTop,W,bh);
 
-  /* nome do sabor na faixa inferior, repetido nas duas faces */
-  c.fillStyle=f.ink; c.textBaseline="alphabetic";
-  c.font='900 '+Math.round(bh*0.085)+'px Archivo, sans-serif';
-  var nm=f.name.toUpperCase();
-  tracked(c,nm,W*0.27,yBot-bh*0.085,bh*0.012,"center");
-  c.globalAlpha=.7;
-  c.font='400 '+Math.round(bh*0.040)+'px "IBM Plex Mono", monospace';
-  tracked(c,f.line.toUpperCase(),W*0.27,yBot-bh*0.040,bh*0.028,"center");
-  c.globalAlpha=1;
+    c.save(); c.translate(cxA,0); c.scale(AR,1);
+    c.shadowColor="rgba(0,0,0,.40)"; c.shadowBlur=W*0.002; c.shadowOffsetY=H*0.003;
+    drawClaw(c,-cwU/2,clawY,cwU,chH,{fill:f.claw,outline:f.clawOut,outlineW:0.030});
+    c.shadowColor="transparent"; c.shadowBlur=0; c.shadowOffsetY=0;
+    drawLockup(c,0,yTop+bh*0.705,bh*0.130,f.lock,f.ink,f.clawOut,f.sub);
 
-  /* filete de cor cruzando a lata */
-  c.fillStyle = f.dark ? f.claw : "rgba(0,0,0,.55)";
-  c.globalAlpha=.9; c.fillRect(0,yTop+bh*0.845,W,Math.max(2,H*0.0035)); c.globalAlpha=1;
+    /* nome do sabor na base */
+    c.fillStyle=f.ink; c.strokeStyle=f.clawOut; c.lineJoin="round";
+    c.textBaseline="alphabetic";
+    c.font='900 '+Math.round(bh*0.090)+'px Archivo, sans-serif';
+    c.lineWidth=bh*0.016;
+    tracked(c,f.name.toUpperCase(),0,yBot-bh*0.052,bh*0.008,"center",true);
+    c.restore();
 
-  noiseOn(c,W,H,0.10,11,2);
+    /* ---- face oposta: marca na vertical ---- */
+    c.save();
+    c.translate(W*0.755, yTop+bh*0.5); c.rotate(-Math.PI/2); c.scale(1/AR,1);
+    c.fillStyle=f.ink; c.strokeStyle=f.clawOut; c.textBaseline="middle";
+    c.font='900 '+Math.round(bh*0.19)+'px Archivo, sans-serif';
+    c.lineWidth=bh*0.026;
+    tracked(c,"MONSTER",0,-bh*0.10,-bh*0.008,"center",true);
+    c.globalAlpha=.9;
+    c.font='500 '+Math.round(bh*0.058)+'px "IBM Plex Mono", monospace';
+    c.lineWidth=bh*0.010;
+    tracked(c,f.line.toUpperCase(),0,bh*0.06,bh*0.048,"center",true);
+    c.restore();
+
+    /* filete de cor cruzando a lata */
+    c.globalAlpha=.85;
+    c.fillStyle = f.dark ? f.claw[1] : f.clawOut;
+    c.fillRect(0,yTop+bh*0.905,W,Math.max(2,H*0.003)); c.globalAlpha=1;
+  }
+
+  noiseOn(c,W,H,0.09,11,2);
   var t=new THREE.CanvasTexture(cv);
   t.colorSpace=THREE.SRGBColorSpace; t.wrapS=THREE.RepeatWrapping;
   return t;
@@ -491,8 +573,11 @@ function makeRM(f, prof, W, H){
   c.fillStyle= f.dark ? "rgb(0,112,92)" : "rgb(0,104,74)";          /* impressão */
   c.fillRect(0,yTop,W,bh);
   /* verniz mais liso sobre a garra */
-  var cxA=W*0.27, cyA=yTop+bh*0.42, ch=bh*0.66, cw=ch*0.82;
-  c.globalAlpha=.75; drawClaw(c, cxA-cw/2, cyA-ch*0.52, cw, ch, "rgb(0,74,120)"); c.globalAlpha=1;
+  var AR=(W/(2*Math.PI*prof.rmax))/(H/prof.arc);
+  var cwH=bh*0.50, cwU=cwH*0.72;
+  c.save(); c.translate(W*0.27,0); c.scale(AR,1); c.globalAlpha=.8;
+  drawClaw(c,-cwU/2, yTop+bh*0.065, cwU, cwH, {fill:"rgb(0,74,120)"});
+  c.restore(); c.globalAlpha=1;
   /* riscos e variação de superfície */
   brushed(c,0,0,W,H,23,0.22);
   noiseOn(c,W,H,0.22,31,1);
@@ -532,15 +617,22 @@ function Intro(host, cv, accent, onDone){
     r.addColorStop(0,"rgba(159,232,10,.16)"); r.addColorStop(.42,"rgba(159,232,10,.03)");
     r.addColorStop(1,"rgba(6,8,10,0)");
     lg.fillStyle=r; lg.fillRect(0,0,W,H);
-    var ch=S*0.34, cw=ch*0.78;
-    lg.save(); lg.shadowColor="rgba(159,232,10,.55)"; lg.shadowBlur=S*0.06;
-    drawClaw(lg, cx-cw/2, cy-ch*0.62, cw, ch, accent); lg.restore();
-    lg.fillStyle="#F3F6F2"; lg.textBaseline="middle";
-    lg.font='900 '+Math.round(S*0.105)+'px Archivo, sans-serif';
-    tracked(lg,"MONSTER",cx,cy+ch*0.56,-S*0.003,"center");
-    lg.globalAlpha=.55;
-    lg.font='400 '+Math.round(S*0.020)+'px "IBM Plex Mono", monospace';
-    tracked(lg,"EXPERIÊNCIA DE SABORES",cx,cy+ch*0.75,S*0.017,"center");
+    var chH=S*0.30, cwW=chH*0.72;
+    lg.save(); lg.shadowColor="rgba(159,232,10,.45)"; lg.shadowBlur=S*0.05;
+    if(ASSETS.logo && ASSETS.logo.width){
+      var lw=S*0.52, lh=lw*(ASSETS.logo.height/ASSETS.logo.width);
+      lg.drawImage(ASSETS.logo,cx-lw/2,cy-lh*0.5,lw,lh);
+      lg.restore();
+    }else{
+      drawClaw(lg, cx-cwW/2, cy-chH*0.70, cwW, chH,
+        {fill:["#DCF46F","#8FD117","#46930D"], outline:"#000000", outlineW:0.036});
+      lg.restore();
+      lg.textBaseline="alphabetic";
+      drawLockup(lg, cx, cy+chH*0.62, S*0.088, "energy", "#FFFFFF", "#000000", "");
+    }
+    lg.globalAlpha=.5; lg.fillStyle="#F3F6F2"; lg.textBaseline="alphabetic";
+    lg.font='400 '+Math.round(S*0.019)+'px "IBM Plex Mono", monospace';
+    tracked(lg,"EXPERIÊNCIA DE SABORES",cx,cy+chH*1.02,S*0.016,"center");
     lg.globalAlpha=1;
   }
 
@@ -805,7 +897,8 @@ function buildProfile(M){
   for(i=0;i<M;i++){
     if(pts[i].x>0.3245 && pts[i].y>=0.098*YS && pts[i].y<=1.053*YS){ if(i0<0) i0=i; i1=i; }
   }
-  return { pts:pts, vStart:i0/(M-1), vEnd:i1/(M-1),
+  return { pts:pts, arc:total*YS, rmax:0.332,
+           vStart:i0/(M-1), vEnd:i1/(M-1),
            y0:pts[i0].y, y1:pts[i1].y, h:1.302*YS, half:0.651*YS };
 }
 
@@ -947,13 +1040,52 @@ var COMP_FRAG=[
 " c+=uFlash;",
 " gl_FragColor=vec4(max(c,0.0),1.0); }"].join("\n");
 
+/* superfície de água: equação de onda 2D em ping-pong na GPU.
+   .r = altura atual, .g = altura do passo anterior. */
+var SIM_FRAG=[
+"precision highp float;",
+"varying vec2 vUv; uniform sampler2D tPrev; uniform vec2 uTexel;",
+"uniform vec3 uDrop; uniform float uDropR, uDamp, uSpeed;",
+"void main(){",
+" vec2 c=texture2D(tPrev,vUv).rg;",
+" float lap=texture2D(tPrev,vUv-vec2(uTexel.x,0.0)).r+texture2D(tPrev,vUv+vec2(uTexel.x,0.0)).r",
+"  +texture2D(tPrev,vUv-vec2(0.0,uTexel.y)).r+texture2D(tPrev,vUv+vec2(0.0,uTexel.y)).r-4.0*c.r;",
+" float nh=(2.0*c.r-c.g+lap*uSpeed)*uDamp;",
+" if(abs(uDrop.z)>0.0001){ nh+=uDrop.z*smoothstep(uDropR,0.0,length(vUv-uDrop.xy)); }",
+" float edge=min(min(vUv.x,1.0-vUv.x),min(vUv.y,1.0-vUv.y));",
+" nh*=mix(0.88,1.0,smoothstep(0.0,0.07,edge));",
+" gl_FragColor=vec4(clamp(nh,-0.9,0.9),c.r,0.0,1.0); }"].join("\n");
+
+/* malha polar: densa junto da lata, esparsa no horizonte */
+function waterGeometry(rings,sect,rMin,rMax){
+  var pos=[0,0,0], idx=[], i,j,jn,b0,b1,t,r,a;
+  for(i=0;i<rings;i++){
+    t=i/(rings-1); r=rMin*Math.pow(rMax/rMin,t);
+    for(j=0;j<sect;j++){ a=j/sect*Math.PI*2; pos.push(Math.cos(a)*r,Math.sin(a)*r,0); }
+  }
+  for(j=0;j<sect;j++) idx.push(0,1+j,1+(j+1)%sect);
+  for(i=0;i<rings-1;i++){
+    b0=1+i*sect; b1=1+(i+1)*sect;
+    for(j=0;j<sect;j++){ jn=(j+1)%sect;
+      idx.push(b0+j,b1+j,b0+jn); idx.push(b0+jn,b1+j,b1+jn); }
+  }
+  var g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+  g.setIndex(idx); g.computeBoundingSphere();
+  return g;
+}
+
 var WATER_VERT=[
-"uniform mat4 uTexMatrix; uniform float uTime, uWave;",
+"uniform mat4 uTexMatrix; uniform float uTime, uWave, uRipple, uDom;",
+"uniform sampler2D tSim;",
 "varying vec4 vProj, vRefl; varying vec3 vWorld;",
 "void main(){",
 " vec3 p=position;",
+" vec2 sv=vec2(p.x,-p.y)/uDom+0.5;",
+" float hs=0.0;",
+" if(sv.x>0.002&&sv.x<0.998&&sv.y>0.002&&sv.y<0.998) hs=texture2D(tSim,sv).r;",
 " float w=sin(p.x*1.9+uTime*0.9)*0.5+sin(p.y*1.5-uTime*0.75)*0.5;",
-" p.z += w*0.018*uWave;",
+" p.z += w*0.018*uWave + hs*uRipple;",
 " vec4 wp=modelMatrix*vec4(p,1.0);",
 " vWorld=wp.xyz; vRefl=uTexMatrix*wp;",
 " vProj=projectionMatrix*viewMatrix*wp; gl_Position=vProj; }"].join("\n");
@@ -961,7 +1093,8 @@ var WATER_VERT=[
 var WATER_FRAG=[
 "precision highp float;",
 "uniform sampler2D tScene, tDepth, tRefl;",
-"uniform float uNear, uFar, uTime, uFade, uWave;",
+"uniform float uNear, uFar, uTime, uFade, uWave, uRipple, uDom, uSimTexel;",
+"uniform sampler2D tSim;",
 "uniform vec3 uCol, uLightDir;",
 "varying vec4 vProj, vRefl; varying vec3 vWorld;",
 "#include <packing>",
@@ -974,29 +1107,46 @@ var WATER_FRAG=[
 " vec2 q=vWorld.xz; float e=0.09;",
 " float h0=wh(q);",
 " float dhx=(wh(q+vec2(e,0.0))-h0)/e, dhz=(wh(q+vec2(0.0,e))-h0)/e;",
-" float amp=uWave*(0.008+0.075*exp(-length(q)*0.26));",
-" vec3 n=normalize(vec3(-dhx*amp,1.0,-dhz*amp));",
+" float amp=uWave*(0.010+0.105*exp(-length(q)*0.24));",
+" vec2 sv=q/uDom+0.5; float te=uSimTexel;",
+" float hc=0.0, gx=0.0, gz=0.0;",
+" if(sv.x>0.004&&sv.x<0.996&&sv.y>0.004&&sv.y<0.996){",
+"  hc=texture2D(tSim,sv).r;",
+"  float hl=texture2D(tSim,sv-vec2(te,0.0)).r, hr=texture2D(tSim,sv+vec2(te,0.0)).r;",
+"  float hd=texture2D(tSim,sv-vec2(0.0,te)).r, hu=texture2D(tSim,sv+vec2(0.0,te)).r;",
+"  float kk=uRipple/(2.0*te*uDom);",
+"  gx=(hr-hl)*kk; gz=(hu-hd)*kk; }",
+" vec3 n=normalize(vec3(-(dhx*amp+gx),1.0,-(dhz*amp+gz)));",
 " vec3 V=normalize(cameraPosition-vWorld);",
 " float fres=0.030+0.970*pow(1.0-clamp(dot(n,V),0.0,1.0),5.0);",
 " float spec0=clamp(dot(normalize(reflect(-V,n)),normalize(uLightDir)),0.0,1.0);",
 " float zS=-perspectiveDepthToViewZ(sd,uNear,uFar);",
 " float zW=-perspectiveDepthToViewZ(gl_FragCoord.z,uNear,uFar);",
 " float thick=max(zS-zW,0.0);",
-" float dens=1.0-exp(-thick*0.85);",
-" vec2 off=vec2(-dhx,-dhz)*amp*0.085*clamp(thick,0.0,1.6);",
+" float dens=1.0-exp(-thick*0.62);",
+" vec2 off=(vec2(-dhx*amp,-dhz*amp)*0.10+vec2(-gx,-gz)*0.055)*clamp(thick,0.0,1.8);",
 " vec3 refr=texture2D(tScene,clamp(suv+off,vec2(0.002),vec2(0.998))).rgb;",
 " vec3 tint=mix(vec3(1.0),uCol,0.88);",
 " vec3 body=uCol*(0.92+0.5*spec0)*(0.72+0.42*exp(-thick*0.45));",
-" refr=mix(refr*mix(vec3(1.0),tint*tint,0.8), body, clamp(dens*1.1,0.0,0.82));",
+" refr=mix(refr*mix(vec3(1.0),tint*tint,0.72), body, clamp(dens*1.05,0.0,0.74));",
 " vec2 ruv=clamp(vRefl.xy/vRefl.w+off*0.7,vec2(0.002),vec2(0.998));",
 " vec3 refl=texture2D(tRefl,ruv).rgb;",
 " float spec=pow(spec0,300.0)*2.0;",
 " vec3 col=mix(refr,refl,clamp(fres,0.0,0.80))+spec;",
 " float edge=1.0-smoothstep(0.0,0.05,thick);",
 " col+=(uCol*0.5+0.10)*edge;",
+" float agit=clamp(abs(hc)*1.1,0.0,1.0);",
+" float turb=clamp(length(vec2(gx,gz))*0.30,0.0,1.0);",
+" float foam=smoothstep(0.52,0.98,max(agit,turb));",
+" col=mix(col, mix(vec3(0.93,0.96,0.97), uCol*1.3+0.20, 0.55), foam*0.40);",
 " float far=smoothstep(30.0,9.0,length(q));",
 " gl_FragColor=vec4(col, uFade*far); }"].join("\n");
 
+function fsMaterialLater(){
+  return fsMaterial(SIM_FRAG,{ tPrev:{value:null}, uTexel:{value:new THREE.Vector2(1/SIMN,1/SIMN)},
+    uDrop:{value:new THREE.Vector3()}, uDropR:{value:0.05},
+    uDamp:{value:0.9955}, uSpeed:{value:0.30} });
+}
 function fsMaterial(frag, uniforms){
   return new THREE.ShaderMaterial({
     uniforms:uniforms, depthTest:false, depthWrite:false,
@@ -1009,10 +1159,37 @@ function fsMaterial(frag, uniforms){
 var CAM=[ {a:-0.34,y:0.22,r:4.70}, {a: 0.62,y:0.42,r:4.28}, {a:-0.82,y:0.10,r:4.45},
           {a: 0.34,y:0.52,r:4.80}, {a:-0.18,y:0.26,r:4.20} ];
 /* composição final: arco irregular, com profundidade real entre as latas */
-var SLOT=[ {x:-2.10,z:-0.60,ry: 0.30}, {x:-1.05,z: 0.82,ry:-0.16}, {x: 0.02,z:-1.15,ry: 0.10},
-           {x: 1.28,z: 0.72,ry:-0.30}, {x: 2.42,z:-0.50,ry: 0.20} ];
+var SLOT=[ {x:-2.05,z:-0.50,ry: 0.16}, {x:-1.10,z: 0.78,ry:-0.10}, {x:-0.02,z:-1.05,ry: 0.06},
+           {x: 1.06,z: 0.66,ry:-0.14}, {x: 2.40,z:-0.45,ry: 0.12} ];
 var CLAW_U=0.27*Math.PI*2;
-var ST={ pos:0, posS:0, i:0, u:0, tp:0, rise:0, shown:-1, impulse:0, t:0, waterY:-1.30, ready:false };
+var ST={ pos:0, posS:0, i:0, u:0, tp:0, rise:0, shown:-1, impulse:0, t:0,
+         waterY:-1.62, prevCanY:0, prevWaterY:-1.62, simSteps:2, ready:false };
+/* simulação de ondas */
+var simA, simB, simMat, simOK=false, drops=[], SIMN=256, SIMDOM=18.0;
+var _rig=new THREE.Vector3(), _aim=new THREE.Vector3(), _trk=new THREE.Vector3(),
+    _base=new THREE.Vector3(), _shift=new THREE.Vector3(),
+    _fin=new THREE.Vector3(0,-0.35,0), camInit=false;
+var _ndc=new THREE.Vector2(), _ray=new THREE.Raycaster(), lastPtr=0;
+
+function pushDrop(x,z,a,r){
+  if(!simOK || drops.length>7) return;
+  var u=x/SIMDOM+0.5, v=z/SIMDOM+0.5;
+  if(u<0.04||u>0.96||v<0.04||v>0.96) return;
+  drops.push({u:u,v:v,a:a,r:r});
+}
+function simStep(){
+  if(!simOK) return;
+  for(var i=0;i<ST.simSteps;i++){
+    var d=drops.length?drops.shift():null;
+    simMat.uniforms.tPrev.value=simA.texture;
+    if(d){ simMat.uniforms.uDrop.value.set(d.u,d.v,d.a); simMat.uniforms.uDropR.value=d.r; }
+    else simMat.uniforms.uDrop.value.set(0,0,0);
+    renderer.setRenderTarget(simB);
+    fsQuad.material=simMat; renderer.render(fsScene,orthoCam);
+    var t=simA; simA=simB; simB=t;
+  }
+  water.material.uniforms.tSim.value=simA.texture;
+}
 var extras=[], heroGrp=null;
 var cA=new THREE.Color(), cB=new THREE.Color(), cAcc=new THREE.Color(), cLiq=new THREE.Color();
 var _v3=new THREE.Vector3();
@@ -1060,16 +1237,31 @@ function initStage(){
     scene.add(e); extras.push(e);
   }
 
+  /* simulação de ondas em ponto flutuante, quando o hardware permite */
+  var ex=renderer.extensions;
+  simOK=!!(ex.has("EXT_color_buffer_float")||ex.has("EXT_color_buffer_half_float"));
+  var blank=new THREE.DataTexture(new Uint8Array([0,0,0,255]),1,1);
+  blank.needsUpdate=true;
+  if(simOK){
+    var so={minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,
+            type:THREE.HalfFloatType,depthBuffer:false,stencilBuffer:false};
+    simA=new THREE.WebGLRenderTarget(SIMN,SIMN,so);
+    simB=new THREE.WebGLRenderTarget(SIMN,SIMN,so);
+    simMat=fsMaterialLater();
+  }
+
   /* água */
   var wmat=new THREE.ShaderMaterial({
     uniforms:{ tScene:{value:null}, tDepth:{value:null}, tRefl:{value:null},
       uNear:{value:camera.near}, uFar:{value:camera.far}, uTime:{value:0}, uFade:{value:1},
       uWave:{value:1}, uCol:{value:new THREE.Vector3(0.45,0.78,0.06)},
-      uLightDir:{value:new THREE.Vector3(3.2,4.6,2.8).normalize()}, uTexMatrix:{value:_texM} },
+      uLightDir:{value:new THREE.Vector3(3.2,4.6,2.8).normalize()}, uTexMatrix:{value:_texM},
+      tSim:{value:blank}, uRipple:{value:simOK?0.16:0.0},
+      uDom:{value:SIMDOM}, uSimTexel:{value:1/SIMN} },
     vertexShader:WATER_VERT, fragmentShader:WATER_FRAG,
     transparent:true, depthTest:false, depthWrite:false, side:THREE.DoubleSide
   });
-  water=new THREE.Mesh(new THREE.PlaneGeometry(70,70,72,72),wmat);
+  water=new THREE.Mesh(waterGeometry(150,128,0.10,40),wmat);
   water.rotation.x=-Math.PI/2; water.frustumCulled=false;
   waterScene=new THREE.Scene(); waterScene.add(water);
 
@@ -1087,6 +1279,12 @@ function initStage(){
   fsScene.add(fsQuad);
 
   resize();
+  if(simOK){
+    renderer.setClearColor(0x000000,1);
+    renderer.setRenderTarget(simA); renderer.clear(true,false,false);
+    renderer.setRenderTarget(simB); renderer.clear(true,false,false);
+    renderer.setRenderTarget(null); renderer.setClearColor(0x06080A,1);
+  }
   applyPair(0);
   update(0);
   renderer.compile(scene,camera);
@@ -1182,25 +1380,30 @@ function update(dt){
   var rise=tp<0.5?easeInOut(tp/0.5):1-easeInOut((tp-0.5)/0.5);
   rise=clamp(rise+ST.impulse*0.10*Math.sin(tp*Math.PI),0,1.1);
   ST.rise=rise;
-  var waterY=lerp(-1.62,0.78,rise);
+  var waterY=lerp(-1.62,0.52,rise);
   ST.waterY=waterY;
   water.position.y=waterY;
 
-  var canY=-0.72*rise;
+  var canY=-0.62*rise;
   var fk=last?smoothstep(0.50,0.98,tp):0;
   if(last) canY=lerp(canY,-canProf.half,fk);
   heroGrp.position.set(lerp(0,SLOT[N-1].x,fk), canY, lerp(0,SLOT[N-1].z,fk));
   var faceAng=lerp(CAM[i].a,CAM[Math.min(i+1,N-1)].a,tp);
   var spin=faceAng-CLAW_U+Math.sin(ST.t*0.13)*0.10+tp*4*Math.PI;
-  heroGrp.rotation.y=last?lerp(spin,faceAng-CLAW_U+SLOT[N-1].ry,fk):spin;
+  var faceFin=Math.atan2(camera.position.x-SLOT[N-1].x,camera.position.z-SLOT[N-1].z);
+  heroGrp.rotation.y=last?lerp(spin,faceFin-CLAW_U+SLOT[N-1].ry,fk):spin;
   heroGrp.rotation.z=Math.sin(tp*Math.PI)*0.11*(1-fk);
   heroGrp.rotation.x=Math.sin(tp*Math.PI*2.0)*0.035*(1-fk);
 
   for(var k=0;k<extras.length;k++){
     var sh=last?smoothstep(0.52+k*0.045,0.80+k*0.045,tp):0;
     extras[k].visible=sh>0.002;
-    extras[k].position.y=lerp(-2.6,-canProf.half,easeOut(sh));
-    extras[k].rotation.y=-0.30-CLAW_U+SLOT[k].ry+Math.sin(ST.t*0.10+k)*0.035;
+    var ey=lerp(-2.6,-canProf.half,easeOut(sh));
+    if(sh>0.01 && sh<0.99 && Math.abs(ey-(extras[k].position.y||ey))>0.001)
+      pushDrop(SLOT[k].x,SLOT[k].z,clamp((ey-extras[k].position.y)*0.12,-0.07,0.07),0.050);
+    extras[k].position.y=ey;
+    extras[k].rotation.y=Math.atan2(camera.position.x-SLOT[k].x,camera.position.z-SLOT[k].z)
+      -CLAW_U+SLOT[k].ry+Math.sin(ST.t*0.10+k)*0.030;
   }
 
   /* câmera */
@@ -1210,8 +1413,8 @@ function update(dt){
   var camR=lerp(A.r,B.r,tp)-ST.impulse*0.22;
   var lookY=canY*0.45+0.02;
   /* no mergulho a câmera sobe e mergulha o olhar para dentro do líquido */
-  camY=lerp(camY,waterY+1.55,rise);
-  camR=lerp(camR,2.75,rise);
+  camY=lerp(camY,waterY+1.35,rise);
+  camR=lerp(camR,2.55,rise);
   lookY=lerp(lookY,waterY-0.72,rise);
   if(last){
     var fe=Math.max(fk,smoothstep(0,0.55,fin));
@@ -1221,11 +1424,31 @@ function update(dt){
     lookY=lerp(lookY,-0.50,fe);
   }
   if(window.innerWidth<=860){ camR*=1.10; lookY-=0.30*(1-rise); }
-  camera.position.set(Math.sin(ang)*camR,camY,Math.cos(ang)*camR);
-  camera.lookAt(0,lookY,0);
-  /* no desktop o produto fica fora do eixo do texto */
-  var yaw=(window.innerWidth>900?0.115:0.0)*(1-Math.max(rise,fk));
-  if(yaw) camera.rotateY(yaw);
+
+  /* rig: a câmera persegue a lata com inércia, como um travelling real.
+     posição amortecida + mira atrasada = peso, sem flutuar sem motivo. */
+  _rig.set(Math.sin(ang)*camR,camY,Math.cos(ang)*camR);
+  _aim.set(heroGrp.position.x, heroGrp.position.y+lerp(0.06,-0.10,rise), heroGrp.position.z);
+  if(last) _aim.lerp(_fin,fe);
+  if(window.innerWidth<=860) _aim.y+=0.30*(1-rise);
+  if(!camInit){ _base.copy(_rig); _trk.copy(_aim); camInit=true; }
+  else{
+    _base.lerp(_rig, dt>0?1-Math.exp(-dt*(5.6+ST.impulse*3.5)):1);
+    _trk.lerp(_aim, dt>0?1-Math.exp(-dt*5.0):1);
+  }
+  camera.position.set(
+    _base.x+Math.sin(ST.t*0.53)*0.006+Math.sin(ST.t*1.27)*0.0025,
+    _base.y+Math.cos(ST.t*0.47)*0.006+Math.sin(ST.t*1.11)*0.0025,
+    _base.z+Math.cos(ST.t*0.61)*0.005);
+  /* no desktop o produto sai do eixo do texto: o alvo desliza na horizontal,
+     sem inclinar o horizonte nem exagerar quando a câmera mergulha */
+  var off=(window.innerWidth>900?0.13:0.0)*(1-Math.max(rise,fk))*camR;
+  if(off>0.001){
+    var fx=_trk.x-camera.position.x, fz=_trk.z-camera.position.z;
+    var fl=Math.hypot(fx,fz)||1;
+    _shift.set(_trk.x+(fz/fl)*off, _trk.y, _trk.z-(fx/fl)*off);
+    camera.lookAt(_shift);
+  } else camera.lookAt(_trk);
   camera.updateMatrixWorld();
   camFill.position.copy(camera.position);
 
@@ -1242,6 +1465,18 @@ function update(dt){
   water.material.uniforms.uFade.value=1;
   water.material.uniforms.uNear.value=camera.near;
   water.material.uniforms.uFar.value=camera.far;
+
+  /* o produto desloca o líquido: impulso proporcional à velocidade relativa */
+  var relV=((canY-ST.prevCanY)-(waterY-ST.prevWaterY))/Math.max(dt,0.001);
+  var cb=canY-canProf.half, ct=canY+canProf.half;
+  var step=Math.min(dt,0.034);
+  ST.simSteps=Math.max(1,Math.min(5,Math.round(dt/0.0085)));
+  if(waterY>cb-0.30 && waterY<ct+0.30){
+    if(Math.abs(relV)>0.05) pushDrop(heroGrp.position.x,heroGrp.position.z,
+      clamp(relV*0.10*step,-0.12,0.12),0.050);
+    else if(Math.random()<0.3) pushDrop(heroGrp.position.x,heroGrp.position.z,(Math.random()-0.5)*0.006,0.035);
+  }
+  ST.prevCanY=canY; ST.prevWaterY=waterY;
 
   /* o rótulo troca na linha d'água */
   var mu=heroGrp.userData.mat.userData.u;
@@ -1269,6 +1504,7 @@ function update(dt){
 
 /* ------------- desenho ------------- */
 function draw(){
+  simStep();
   if(updateRefl(ST.waterY)){
     renderer.setRenderTarget(rtRefl);
     renderer.setClearColor(0x05070A,1); renderer.clear(true,true,false);
@@ -1447,6 +1683,17 @@ function start(){
   window.addEventListener("resize",onResize);
   window.addEventListener("orientationchange",onResize);
   document.addEventListener("visibilitychange",function(){ document.hidden?pause():play(); });
+  window.addEventListener("pointermove",function(e){
+    if(!simOK||!camera) return;
+    var now=performance.now(); if(now-lastPtr<45) return; lastPtr=now;
+    _ndc.set(e.clientX/window.innerWidth*2-1, -(e.clientY/window.innerHeight)*2+1);
+    _ray.setFromCamera(_ndc,camera);
+    var dy=_ray.ray.direction.y;
+    if(Math.abs(dy)<1e-4) return;
+    var tt=(ST.waterY-_ray.ray.origin.y)/dy;
+    if(tt>0.2 && tt<40) pushDrop(_ray.ray.origin.x+_ray.ray.direction.x*tt,
+                                 _ray.ray.origin.z+_ray.ray.direction.z*tt, -0.030, 0.035);
+  },{passive:true});
   window.addEventListener("scroll",function(){
     if((window.scrollY||0)>window.innerHeight*0.25) elHint.classList.add("gone");
   },{passive:true});
@@ -1471,7 +1718,23 @@ function whenFonts(cb){
   }catch(e){}
   setTimeout(go,2800);
 }
-whenFonts(start);
+/* imagens opcionais (arte oficial) antes de montar as texturas */
+function loadAssets(cb){
+  var urls=[], keys=[], i, u;
+  if(ASSETS.logo && typeof ASSETS.logo==="string"){ urls.push(ASSETS.logo); keys.push("logo"); }
+  for(i=0;i<N;i++){ u=ASSETS.label[FLAVORS[i].id];
+    if(u && typeof u==="string"){ urls.push(u); keys.push(FLAVORS[i].id); } }
+  if(!urls.length) return cb();
+  var left=urls.length, done=false;
+  function fin(){ if(--left<=0 && !done){ done=true; cb(); } }
+  urls.forEach(function(src,k){
+    var im=new Image(); im.crossOrigin="anonymous";
+    im.onload=function(){ if(keys[k]==="logo") ASSETS.logo=im; else ASSETS.label[keys[k]]=im; fin(); };
+    im.onerror=fin; im.src=src;
+  });
+  setTimeout(function(){ if(!done){ done=true; cb(); } },4500);
+}
+whenFonts(function(){ loadAssets(start); });
 
 })();
 </script>
